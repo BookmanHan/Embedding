@@ -26,8 +26,7 @@ public:
 		return scores[name_relation[triplet.second]]/total_score;
 	}
 
-	virtual double train_once(	const pair<pair<string, string>,string>& triplet, 
-								double alpha) 
+	void train_positive_once(const pair<pair<string, string>,string>& triplet)
 	{
 		vector<double>	scores(set_relation.size());
 		double total_score = 0;
@@ -39,18 +38,55 @@ public:
 		for_each(scores.begin(), scores.end(), [&](double & elem){total_score += elem;});
 
 		embeddings[name_relation[triplet.second]][name_entity[triplet.first.first]]
-			+= alpha * embeddings[name_relation[triplet.second]][name_entity[triplet.first.second]];
+		+= alpha * embeddings[name_relation[triplet.second]][name_entity[triplet.first.second]];
 		embeddings[name_relation[triplet.second]][name_entity[triplet.first.second]]
-			+= alpha * embeddings[name_relation[triplet.second]][name_entity[triplet.first.first]];
+		+= alpha * embeddings[name_relation[triplet.second]][name_entity[triplet.first.first]];
 
 		for(auto i=0; i<set_relation.size(); ++i)
 		{
 			embeddings[i][name_entity[triplet.first.first]] -= 
 				alpha * scores[i]/total_score * embeddings[i][name_entity[triplet.first.second]]
-				+ alpha * alpha * embeddings[i][name_entity[triplet.first.first]];
+			+ alpha * alpha * embeddings[i][name_entity[triplet.first.first]];
 			embeddings[i][name_entity[triplet.first.second]]-= 
 				alpha * scores[i]/total_score * embeddings[i][name_entity[triplet.first.first]]
-				+ alpha * alpha * embeddings[i][name_entity[triplet.first.second]];
+			+ alpha * alpha * embeddings[i][name_entity[triplet.first.second]];
 		}
+	}
+
+	void train_negtive_once(const pair<pair<string, string>,string>& triplet)
+	{
+		vector<double>	scores(set_relation.size());
+		double total_score = 0;
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			scores[i] = exp(as_scalar(embeddings[i][name_entity[triplet.first.first]].t()
+				*embeddings[i][name_entity[triplet.first.second]]));
+		}
+		for_each(scores.begin(), scores.end(), [&](double & elem){total_score += elem;});
+
+		embeddings[name_relation[triplet.second]][name_entity[triplet.first.first]]
+		-= alpha * embeddings[name_relation[triplet.second]][name_entity[triplet.first.second]];
+		embeddings[name_relation[triplet.second]][name_entity[triplet.first.second]]
+		-= alpha * embeddings[name_relation[triplet.second]][name_entity[triplet.first.first]];
+
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			embeddings[i][name_entity[triplet.first.first]] += 
+				alpha * scores[i]/total_score * embeddings[i][name_entity[triplet.first.second]]
+			- alpha * alpha * embeddings[i][name_entity[triplet.first.first]];
+			embeddings[i][name_entity[triplet.first.second]]+= 
+				alpha * scores[i]/total_score * embeddings[i][name_entity[triplet.first.first]]
+			- alpha * alpha * embeddings[i][name_entity[triplet.first.second]];
+		}
+	}
+
+	virtual double train_once(	const pair<pair<string, string>,string>& triplet, 
+								double alpha) 
+	{
+		pair<pair<string, string>,string> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		train_positive_once(triplet);
+		train_negtive_once(triplet_f);
 	}
 };
