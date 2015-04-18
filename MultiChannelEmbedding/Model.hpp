@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 
 using namespace std;
 using namespace arma;
@@ -16,36 +17,60 @@ using namespace arma;
 class EmbeddingModel
 {
 protected:
-	vector<pair<pair<string, string>, string>>	data_train;
+	set<pair<pair<string, string>, string>>	data_train;
 	vector<pair<pair<string, string>, string>>	data_dev_true;
 	vector<pair<pair<string, string>, string>>	data_dev_false;
 	vector<pair<pair<string, string>, string>>	data_test_true;
 	vector<pair<pair<string, string>, string>>	data_test_false;
 	set<string>	set_entity;
 	set<string>	set_relation;
+	vector<string>	number_entity;
+	vector<string>	number_relation;
 	map<string, int>	name_entity;
 	map<string, int>	name_relation;
+	map<string, int>	count_entity;
+	map<string, vector<string>>     rel_heads;
+	map<string, vector<string>>     rel_tails;
+
+protected:
+	const double alpha;
 
 public:
-	EmbeddingModel()
+	EmbeddingModel(double alpha)
+		:alpha(alpha)
 	{
 		load_training("D:\\Data\\Wordnet\\train.txt", data_train);
 		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false);
 		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false);
+
+		number_entity.resize(set_entity.size());
+		number_relation.resize(set_relation.size());
+		for(auto i=name_entity.begin(); i!=name_entity.end(); ++i)
+		{
+			number_entity[i->second] = i->first;
+		}
+		for(auto i=name_relation.begin(); i!=name_relation.end(); ++i)
+		{
+			number_relation[i->second] = i->first;
+		}
 	}
 
-	void load_training(const string& filename, vector<pair<pair<string, string>,string>>& vin)
+	void load_training(const string& filename, set<pair<pair<string, string>,string>>& vin)
 	{
 		fstream fin(filename);
 		while(!fin.eof())
 		{
 			string head, tail, relation;
 			fin>>head>>relation>>tail;
-			vin.push_back(make_pair(make_pair(head,tail),relation));
+			vin.insert(make_pair(make_pair(head,tail),relation));
 
 			set_entity.insert(head);
 			set_entity.insert(tail);
 			set_relation.insert(relation);
+			++ count_entity[head];
+			++ count_entity[tail];
+			rel_heads[relation].push_back(head);
+			rel_tails[relation].push_back(tail);
 
 			if (name_entity.find(head) == name_entity.end())
 			{
@@ -153,6 +178,7 @@ public:
 			}
 		}
 
+		cout<<"Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size())<<endl;
 		return real_hit/(data_test_true.size() + data_test_false.size());
 	}
 
@@ -161,6 +187,23 @@ public:
 		for(auto i=data_train.begin(); i!=data_train.end(); ++i)
 		{
 			train_once(*i, alpha);
+		}
+	}
+
+	void sample_false_triplet(	const pair<pair<string,string>,string>& origin,
+								pair<pair<string,string>,string>& triplet)
+	{
+		triplet = origin;
+		if (rand()%1000 > 1000 * count_entity[triplet.first.second]
+			/(count_entity[triplet.first.second] + count_entity[triplet.first.first]))
+			{
+				triplet.first.second = rel_tails[triplet.second]
+					[rand()%rel_tails[triplet.second].size()];
+			}
+		else
+		{
+			triplet.first.first = rel_heads[triplet.second]
+				[rand()%rel_heads[triplet.second].size()];
 		}
 	}
 
@@ -180,12 +223,11 @@ class MultiChannelEmbeddingModel
 {
 protected:
 	const unsigned int dim;
-	const double alpha;
 	vector<vector<vec>> embeddings;
 
 public:
 	MultiChannelEmbeddingModel(int dim, double alpha)
-		:dim(dim), alpha(alpha)
+		:dim(dim), EmbeddingModel(alpha)
 	{
 		embeddings.resize(set_relation.size());
 		for(auto i=embeddings.begin(); i!=embeddings.end(); ++i)
@@ -204,11 +246,10 @@ class CubeEmbeddingModel
 {
 protected:
 	vector<mat>		embedding;
-	const double	alpha;
 
 public:
 	CubeEmbeddingModel(double alpha)
-		:alpha(alpha)
+		:EmbeddingModel(alpha)
 	{
 		embedding.resize(set_relation.size());
 		for(auto i=embedding.begin(); i!=embedding.end(); ++i)
@@ -223,12 +264,11 @@ class DeepCubeEmbeddingModel
 {
 protected:
 	vector<field<vec>>		embedding;
-	const double	alpha;
 	const unsigned	dim;
 
 public:
 	DeepCubeEmbeddingModel(int dim, double alpha)
-		:dim(dim), alpha(alpha)
+		:dim(dim), EmbeddingModel(alpha)
 	{
 		embedding.resize(set_relation.size());
 		for(auto i=embedding.begin(); i!=embedding.end(); ++i)
@@ -249,16 +289,15 @@ protected:
 	vector<vec>	embedding_entity;
 	vector<vec>	embedding_relation;
 	const unsigned	dim;
-	const double	alpha;
 
 public:
 	GeometricEmbeddingModel(int dim, double alpha)
-		:dim(dim), alpha(alpha)
+		:dim(dim), EmbeddingModel(alpha)
 	{
 		embedding_entity.resize(set_entity.size());
 		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
 
-		embedding_relation.reserve(set_relation.size());
+		embedding_relation.resize(set_relation.size());
 		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
 	}
 };

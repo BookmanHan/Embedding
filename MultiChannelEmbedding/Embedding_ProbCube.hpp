@@ -1,11 +1,11 @@
 #pragma once
 #include "Model.hpp"
 
-class MultiChannel_ProbCube
+class ProbCubeEmbedding
 	:public CubeEmbeddingModel
 {
 public:
-	MultiChannel_ProbCube(double alpha)
+	ProbCubeEmbedding(double alpha)
 		:CubeEmbeddingModel(alpha)
 	{
 		;
@@ -72,11 +72,11 @@ public:
 	}
 };
 
-class MultiChannel_DeepProbCube
+class DeepProbCubeEmbedding
 	:public DeepCubeEmbeddingModel
 {
 public:
-	MultiChannel_DeepProbCube(int dim, double alpha)
+	DeepProbCubeEmbedding(int dim, double alpha)
 		:DeepCubeEmbeddingModel(dim, alpha)
 	{
 		;

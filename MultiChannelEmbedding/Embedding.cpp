@@ -1,9 +1,11 @@
 #include "Model.hpp"
-#include "MultiChannel_Innerproduct.hpp"
+#include "Embedding_MultiChannel.hpp"
+#include "Embedding_Geometric.hpp"
+#include "Embedding_ProbCube.hpp"
 
 int main(int argc, char* argv[])
 {
-	EmbeddingModel*	Model = new MultiChannel_Innerproduct(10, 0.01);
+	EmbeddingModel*	Model = new TransE(50, 0.01);
 	Model->run();
 
 	return 0;
