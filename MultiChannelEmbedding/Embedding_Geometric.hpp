@@ -135,7 +135,7 @@ public:
 		+ embedding_relation[name_relation[triplet.second]] 
 		- embedding_entity[name_entity[triplet.first.second]];
 
-		return - sum(abs(error).t() * mat_relation[name_relation[triplet.second]] * abs(error));
+		return - as_scalar(abs(error).t() * mat_relation[name_relation[triplet.second]] * abs(error));
 	}
 
 	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
