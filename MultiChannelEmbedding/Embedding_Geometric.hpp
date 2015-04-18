@@ -28,15 +28,11 @@ public:
 public:
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
 	{
-		double total = 0;;
-		for(auto i=0; i<dim; ++i)
-		{
-			total += embedding_entity[name_entity[triplet.first.first]][i]
-			* embedding_entity[name_entity[triplet.first.second]][i]
-			* embedding_relation[name_relation[triplet.second]][i];
-		}
+		vec error = embedding_entity[name_entity[triplet.first.first]]
+			% embedding_entity[name_entity[triplet.first.second]]
+			% embedding_relation[name_relation[triplet.second]];
 
-		return total;
+		return sum(error);
 	}
 
 	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
@@ -51,22 +47,19 @@ public:
 		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
 		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
 
-		for(auto i=0; i<dim; ++i)
-		{
-			head[i] += alpha * tail[i] * relation[i];
-			tail[i] += alpha * head[i] * relation[i];
-			relation[i] += alpha * head[i] * tail[i];
-			head_f[i] += alpha * tail_f[i] * relation_f[i];
-			tail_f[i] += alpha * head_f[i] * relation_f[i];
-			relation_f[i] += alpha * head_f[i] * tail_f[i];
-		}
+		head += alpha * tail % relation;
+		tail += alpha * head % relation;
+		relation += alpha * head % tail;
+		head_f -= alpha * tail_f % relation_f;
+		tail_f -= alpha * head_f % relation_f;
+		relation_f -= alpha * head_f % tail_f;
 
-		normalise(head);
-		normalise(tail);
-		normalise(relation);
-		normalise(head_f);
-		normalise(tail_f);
-		normalise(relation_f);
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
 	}
 };
 
@@ -175,4 +168,87 @@ public:
 		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
 	}
 
+};
+
+class TransMP
+	:public GeometricEmbeddingModel
+{
+public:
+	TransMP(int dim, double alpha)
+		:GeometricEmbeddingModel(dim, alpha)
+	{
+		;
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		vector<double>	scores(set_relation.size());
+		double			total_score = 0;
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			vec error = embedding_entity[name_entity[triplet.first.first]] 
+			+ embedding_relation[i] - embedding_entity[name_entity[triplet.first.second]];
+
+			scores[i] = exp(-sum(abs(error)));
+		}
+		
+		for_each(scores.begin(), scores.end(), [&](double& elem){total_score += elem;});
+
+		return scores[name_relation[triplet.second]]/total_score;
+	}
+
+	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
+	{
+		pair<pair<string, string>,string> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		vec& head = embedding_entity[name_entity[triplet.first.first]];
+		vec& tail = embedding_entity[name_entity[triplet.first.second]];
+		vec& relation = embedding_relation[name_relation[triplet.second]];
+		vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
+		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
+		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
+
+		vector<double>	scores(set_relation.size());
+		double			total_score = 0;
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			vec error = embedding_entity[name_entity[triplet.first.first]] 
+			+ embedding_relation[i] - embedding_entity[name_entity[triplet.first.second]];
+
+			scores[i] = exp(-sum(abs(error)));
+		}
+
+		for_each(scores.begin(), scores.end(), [&](double& elem){total_score += elem;});
+
+		head -= alpha * sign(head + relation - tail); 
+		tail += alpha * sign(head + relation - tail);
+		relation -= alpha * sign(head + relation - tail);
+		
+		for(auto r=0; r<set_relation.size(); ++r)
+		{
+			head += alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail); 
+			tail -= alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail);
+			embedding_relation[r] += alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail);
+		}
+
+		head_f += alpha * sign(head_f + relation_f - tail_f); 
+		tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		relation_f += alpha * sign(head_f + relation_f - tail_f);
+
+		for(auto r=0; r<set_relation.size(); ++r)
+		{
+			head_f -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
+			tail_f += alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
+			embedding_relation[r] -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
+		}
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
+	}
 };
