@@ -9,6 +9,12 @@ inline double sign(const double& x)
 	return x>0?+1:-1;
 }
 
+inline vec& sign(vec& x)
+{
+	for_each(x.begin(), x.end(), [](double& elem){elem=sign(elem);});
+	return x;
+}
+
 class GeometricEmbeddingHadamard
 	:public GeometricEmbeddingModel
 {
@@ -77,15 +83,11 @@ public:
 public:
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
 	{
-		double total = 0;;
-		for(auto i=0; i<dim; ++i)
-		{
-			total += fabs(embedding_entity[name_entity[triplet.first.first]][i]
-			- embedding_entity[name_entity[triplet.first.second]][i]
-			+ embedding_relation[name_relation[triplet.second]][i]);
-		}
+		vec error = embedding_entity[name_entity[triplet.first.first]] 
+			+ embedding_relation[name_relation[triplet.second]] 
+			- embedding_entity[name_entity[triplet.first.second]];
 
-		return - total;
+		return - sum(abs(error));
 	}
 
 	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
@@ -100,21 +102,18 @@ public:
 		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
 		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
 
-		for(auto i=0; i<dim; ++i)
-		{
-			head[i] -= alpha * sign(head[i] + relation[i] - tail[i]);
-			tail[i] += alpha * sign(head[i] + relation[i] - tail[i]);
-			relation[i] -= alpha * sign(head[i] + relation[i] - tail[i]);
-			head_f[i] += alpha * sign(head_f[i] + relation_f[i] - tail_f[i]);
-			tail_f[i] -= alpha * sign(head_f[i] + relation_f[i] - tail_f[i]);
-			relation_f[i] += alpha * sign(head_f[i] + relation_f[i] - tail_f[i]);
-		}
+		head -= alpha * sign(head + relation - tail);
+		tail += alpha * sign(head + relation - tail);
+		relation -= alpha * sign(head + relation - tail);
+		head_f += alpha * sign(head_f + relation_f - tail_f);
+		tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		relation_f += alpha * sign(head_f + relation_f - tail_f);
 
-		//normalise(head);
-		//normalise(tail);
-		//normalise(relation);
-		//normalise(head_f);
-		//normalise(tail_f);
-		//normalise(relation_f);
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
 	}
 };

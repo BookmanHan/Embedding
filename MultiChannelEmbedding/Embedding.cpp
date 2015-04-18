@@ -5,7 +5,7 @@
 
 int main(int argc, char* argv[])
 {
-	EmbeddingModel*	Model = new TransE(50, 0.01);
+	EmbeddingModel*	Model = new TransE(50, 0.02);
 	Model->run();
 
 	return 0;

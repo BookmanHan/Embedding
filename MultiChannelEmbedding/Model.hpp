@@ -193,18 +193,27 @@ public:
 	void sample_false_triplet(	const pair<pair<string,string>,string>& origin,
 								pair<pair<string,string>,string>& triplet)
 	{
-		triplet = origin;
-		if (rand()%1000 > 1000 * count_entity[triplet.first.second]
-			/(count_entity[triplet.first.second] + count_entity[triplet.first.first]))
+		double prob = static_cast<double>(count_entity[origin.first.first])
+			/static_cast<double>(count_entity[origin.first.first] + count_entity[origin.first.second]);
+	
+		while(true)
+		{
+			triplet = origin;
+			if(rand()%1000 < 1000 * prob)
+			{
+				triplet.first.first = rel_heads[triplet.second]
+				[rand()%rel_heads[triplet.second].size()];
+			}
+			else
 			{
 				triplet.first.second = rel_tails[triplet.second]
-					[rand()%rel_tails[triplet.second].size()];
+				[rand()%rel_tails[triplet.second].size()];
 			}
-		else
-		{
-			triplet.first.first = rel_heads[triplet.second]
-				[rand()%rel_heads[triplet.second].size()];
+
+			if (data_train.find(triplet) == data_train.end())
+				return;
 		}
+
 	}
 
 public:
