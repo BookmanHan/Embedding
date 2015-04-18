@@ -182,7 +182,7 @@ public:
 		return real_hit/(data_test_true.size() + data_test_false.size());
 	}
 
-	void train(double alpha)
+	virtual void train(double alpha)
 	{
 		for(auto i=data_train.begin(); i!=data_train.end(); ++i)
 		{
@@ -308,5 +308,20 @@ public:
 
 		embedding_relation.resize(set_relation.size());
 		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
+	}
+};
+
+class GeneralGeometricEmbeddingModel
+	:public GeometricEmbeddingModel
+{
+protected:
+	vector<mat>	mat_relation;
+
+public:
+	GeneralGeometricEmbeddingModel(int dim, double alpha)
+		:GeometricEmbeddingModel(dim, alpha)
+	{
+		mat_relation.resize(set_relation.size());
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = randu(dim,dim);});
 	}
 };
