@@ -173,9 +173,12 @@ public:
 class TransMP
 	:public GeometricEmbeddingModel
 {
+protected:
+	unsigned int sampling_times;
+
 public:
-	TransMP(int dim, double alpha)
-		:GeometricEmbeddingModel(dim, alpha)
+	TransMP(int dim, double alpha, int sampling_times =2)
+		:GeometricEmbeddingModel(dim, alpha), sampling_times(sampling_times)
 	{
 		;
 	}
@@ -184,9 +187,18 @@ public:
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
 	{
 		vec error = embedding_entity[name_entity[triplet.first.first]] 
-			+ embedding_relation[name_relation[triplet.second]] 
-			- embedding_entity[name_entity[triplet.first.second]];
-		
+		+ embedding_relation[name_relation[triplet.second]] 
+		- embedding_entity[name_entity[triplet.first.second]];
+
+		return - sum(abs(error));
+	}
+
+	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		vec error = embedding_entity[name_entity[triplet.first.first]] 
+		+ embedding_relation[name_relation[triplet.second]] 
+		- embedding_entity[name_entity[triplet.first.second]];
+
 		return -sum(abs(error));
 	}
 
@@ -210,32 +222,35 @@ public:
 
 		double total_normalizor = 0;
 		double sign_components[8] = {1,-1,-1,1,-1,1,1,1};
-		for(unsigned i=0; i<8; ++i)
+		for(auto cnt=0; cnt<sampling_times; ++cnt)
 		{
-			bool head = i & 0x001;
-			bool tail = i & 0x100;
-			bool relation = i & 0x010;
-
-			pair<pair<string, string>,string> triplet_sample;
-			sample_triplet(triplet, triplet_sample, head, relation, tail);
-
-			double prob = exp(prob_triplets(triplet_sample));
-			if (_isnan(prob))
-				continue;
-
-			total_normalizor += prob;
-
-			if (head == false)
+			for(unsigned i=0; i<8; ++i)
 			{
-				head_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
-			}
-			if (tail == false)
-			{
-				tail_grad -= -sign_components[i] * prob 	* error_triplets(triplet_sample);
-			}
-			if (relation == false)
-			{
-				relation_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+				bool head = i & 0x001;
+				bool tail = i & 0x100;
+				bool relation = i & 0x010;
+
+				pair<pair<string, string>,string> triplet_sample;
+				sample_triplet(triplet, triplet_sample, head, relation, tail);
+
+				double prob = exp(probability_triplets(triplet_sample));
+				if (_isnan(prob))
+					continue;
+
+				total_normalizor += prob;
+
+				if (head == false)
+				{
+					head_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+				}
+				if (tail == false)
+				{
+					tail_grad -= -sign_components[i] * prob 	* error_triplets(triplet_sample);
+				}
+				if (relation == false)
+				{
+					relation_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+				}
 			}
 		}
 
@@ -254,11 +269,5 @@ public:
 		head = normalise(head);
 		tail = normalise(tail);
 		relation = normalise(relation);
-
-		pair<pair<string, string>,string> triplet_f;
-		sample_false_triplet(triplet, triplet_f);
-		vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
-		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
-		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
 	}
 };

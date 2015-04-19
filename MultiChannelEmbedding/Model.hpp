@@ -215,6 +215,7 @@ public:
 				return;
 		}
 	}
+
 	void sample_triplet(	
 		const pair<pair<string,string>,string>& origin,
 		pair<pair<string,string>,string>& triplet,
