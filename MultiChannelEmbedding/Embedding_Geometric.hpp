@@ -175,10 +175,13 @@ class TransMP
 {
 protected:
 	unsigned int sampling_times;
+	vec			 error;
 
 public:
 	TransMP(int dim, double alpha, int sampling_times =2)
-		:GeometricEmbeddingModel(dim, alpha), sampling_times(sampling_times)
+		:GeometricEmbeddingModel(dim, alpha), 
+		 sampling_times(sampling_times),
+		 error(dim, 1)
 	{
 		;
 	}
@@ -193,20 +196,20 @@ public:
 		return - sum(abs(error));
 	}
 
-	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet )
+	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
 	{
-		vec error = embedding_entity[name_entity[triplet.first.first]] 
-		+ embedding_relation[name_relation[triplet.second]] 
-		- embedding_entity[name_entity[triplet.first.second]];
+		error = embedding_entity[name_entity[triplet.first.first]] 
+			+ embedding_relation[name_relation[triplet.second]] 
+			- embedding_entity[name_entity[triplet.first.second]];
 
 		return -sum(abs(error));
 	}
 
-	virtual vec error_triplets( const pair<pair<string, string>,string>& triplet )
+	virtual vec error_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
 	{
-		vec error = embedding_entity[name_entity[triplet.first.first]] 
-		+ embedding_relation[name_relation[triplet.second]] 
-		- embedding_entity[name_entity[triplet.first.second]];
+		error = embedding_entity[name_entity[triplet.first.first]] 
+			+ embedding_relation[name_relation[triplet.second]] 
+			- embedding_entity[name_entity[triplet.first.second]];
 
 		return sign(error);
 	}
@@ -233,7 +236,7 @@ public:
 				pair<pair<string, string>,string> triplet_sample;
 				sample_triplet(triplet, triplet_sample, head, relation, tail);
 
-				double prob = exp(probability_triplets(triplet_sample));
+				double prob = exp(probability_triplets(triplet_sample, error));
 				if (_isnan(prob))
 					continue;
 
@@ -241,15 +244,15 @@ public:
 
 				if (head == false)
 				{
-					head_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+					head_grad -= sign_components[i] * prob * error_triplets(triplet_sample, error);
 				}
 				if (tail == false)
 				{
-					tail_grad -= -sign_components[i] * prob 	* error_triplets(triplet_sample);
+					tail_grad -= -sign_components[i] * prob 	* error_triplets(triplet_sample, error);
 				}
 				if (relation == false)
 				{
-					relation_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+					relation_grad -= sign_components[i] * prob * error_triplets(triplet_sample, error);
 				}
 			}
 		}
@@ -258,9 +261,9 @@ public:
 		tail_grad /= total_normalizor;
 		relation_grad /= total_normalizor;
 		
-		head_grad += error_triplets(triplet);
-		tail_grad += - error_triplets(triplet);
-		relation_grad += error_triplets(triplet);
+		head_grad += error_triplets(triplet, error);
+		tail_grad += - error_triplets(triplet, error);
+		relation_grad += error_triplets(triplet, error);
 
 		head -= alpha * head_grad;
 		tail -= alpha * tail_grad;
