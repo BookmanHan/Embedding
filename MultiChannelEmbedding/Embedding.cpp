@@ -6,7 +6,7 @@
 // GeometricEmbeddingHadamard(100, 0.02) = 55.5%
 int main(int argc, char* argv[])
 {
-	EmbeddingModel*	Model = new TransE(50, 0.02);
+	EmbeddingModel*	Model = new TransMP(50, 0.02);
 	Model->run();
 
 	return 0;

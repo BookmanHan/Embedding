@@ -193,8 +193,6 @@ public:
 			scores[i] = exp(-sum(abs(error)));
 		}
 		
-		for_each(scores.begin(), scores.end(), [&](double& elem){total_score += elem;});
-
 		return scores[name_relation[triplet.second]]/total_score;
 	}
 
@@ -233,16 +231,29 @@ public:
 			embedding_relation[r] += alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail);
 		}
 
-		head_f += alpha * sign(head_f + relation_f - tail_f); 
-		tail_f -= alpha * sign(head_f + relation_f - tail_f);
-		relation_f += alpha * sign(head_f + relation_f - tail_f);
+		//std::fill(scores.begin(), scores.end(), 0);
+		//for(auto i=0; i<set_relation.size(); ++i)
+		//{
+		//	vec error = embedding_entity[name_entity[triplet_f.first.first]] 
+		//	+ embedding_relation[i] - embedding_entity[name_entity[triplet_f.first.second]];
 
-		for(auto r=0; r<set_relation.size(); ++r)
-		{
-			head_f -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
-			tail_f += alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
-			embedding_relation[r] -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
-		}
+		//	scores[i] = exp(-sum(abs(error)));
+		//}
+
+		//total_score = 0;
+		//for_each(scores.begin(), scores.end(), [&](double& elem){total_score += elem;});
+
+
+		//head_f += alpha * sign(head_f + relation_f - tail_f); 
+		//tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		//relation_f += alpha * sign(head_f + relation_f - tail_f);
+
+		//for(auto r=0; r<set_relation.size(); ++r)
+		//{
+		//	head_f -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
+		//	tail_f += alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
+		//	embedding_relation[r] -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
+		//}
 
 		head = normalise(head);
 		tail = normalise(tail);
