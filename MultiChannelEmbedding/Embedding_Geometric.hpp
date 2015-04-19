@@ -204,12 +204,12 @@ public:
 		vec& head = embedding_entity[name_entity[triplet.first.first]];
 		vec& tail = embedding_entity[name_entity[triplet.first.second]];
 		vec& relation = embedding_relation[name_relation[triplet.second]];
-		vec head_grad(dim, 1);
-		vec tail_grad(dim, 1);
-		vec relation_grad(dim, 1);
+		vec head_grad(dim, 1, fill::zeros);
+		vec tail_grad(dim, 1, fill::zeros);
+		vec relation_grad(dim, 1, fill::zeros);
 
 		double total_normalizor = 0;
-		double sign_components[8] = {-1,1,1,-1,1,-1,-1,-1};
+		double sign_components[8] = {1,-1,-1,1,-1,1,1,1};
 		for(unsigned i=0; i<8; ++i)
 		{
 			bool head = i & 0x001;
@@ -219,30 +219,30 @@ public:
 			pair<pair<string, string>,string> triplet_sample;
 			sample_triplet(triplet, triplet_sample, head, relation, tail);
 
-			double prob = (prob_triplets(triplet_sample));
+			double prob = exp(prob_triplets(triplet_sample));
 			if (_isnan(prob))
 				continue;
 
 			total_normalizor += prob;
+
 			if (head == false)
+			{
 				head_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+			}
 			if (tail == false)
+			{
 				tail_grad -= -sign_components[i] * prob 	* error_triplets(triplet_sample);
+			}
 			if (relation == false)
+			{
 				relation_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+			}
 		}
 
 		head_grad /= total_normalizor;
 		tail_grad /= total_normalizor;
 		relation_grad /= total_normalizor;
-
-		if (total_normalizor<1e-5)
-		{
-			head_grad = vec(dim, 1);
-			tail_grad = vec(dim, 1);
-			relation_grad = vec(dim, 1);
-		}
-
+		
 		head_grad += error_triplets(triplet);
 		tail_grad += - error_triplets(triplet);
 		relation_grad += error_triplets(triplet);
@@ -254,5 +254,11 @@ public:
 		head = normalise(head);
 		tail = normalise(tail);
 		relation = normalise(relation);
+
+		pair<pair<string, string>,string> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+		vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
+		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
+		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
 	}
 };
