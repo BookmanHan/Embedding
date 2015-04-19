@@ -190,6 +190,7 @@ public:
 		}
 	}
 
+public:
 	void sample_false_triplet(	const pair<pair<string,string>,string>& origin,
 								pair<pair<string,string>,string>& triplet)
 	{
@@ -213,7 +214,27 @@ public:
 			if (data_train.find(triplet) == data_train.end())
 				return;
 		}
-
+	}
+	void sample_triplet(	
+		const pair<pair<string,string>,string>& origin,
+		pair<pair<string,string>,string>& triplet,
+		bool head, bool relation, bool tail)
+	{
+		triplet = origin;
+		if (relation)
+		{
+			triplet.second = number_relation[rand()%number_relation.size()];
+		}
+		if (head)
+		{
+			triplet.first.first = rel_heads[triplet.second]
+				[rand()%rel_heads[triplet.second].size()];
+		}
+		if (tail)
+		{
+			triplet.first.second = rel_tails[triplet.second]
+				[rand()%rel_tails[triplet.second].size()];
+		}
 	}
 
 public:

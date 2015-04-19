@@ -183,83 +183,76 @@ public:
 public:
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
 	{
-		vector<double>	scores(set_relation.size());
-		double			total_score = 0;
-		for(auto i=0; i<set_relation.size(); ++i)
-		{
-			vec error = embedding_entity[name_entity[triplet.first.first]] 
-			+ embedding_relation[i] - embedding_entity[name_entity[triplet.first.second]];
-
-			scores[i] = exp(-sum(abs(error)));
-		}
+		vec error = embedding_entity[name_entity[triplet.first.first]] 
+			+ embedding_relation[name_relation[triplet.second]] 
+			- embedding_entity[name_entity[triplet.first.second]];
 		
-		return scores[name_relation[triplet.second]]/total_score;
+		return -sum(abs(error));
+	}
+
+	virtual vec error_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		vec error = embedding_entity[name_entity[triplet.first.first]] 
+		+ embedding_relation[name_relation[triplet.second]] 
+		- embedding_entity[name_entity[triplet.first.second]];
+
+		return sign(error);
 	}
 
 	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
 	{
-		pair<pair<string, string>,string> triplet_f;
-		sample_false_triplet(triplet, triplet_f);
-
 		vec& head = embedding_entity[name_entity[triplet.first.first]];
 		vec& tail = embedding_entity[name_entity[triplet.first.second]];
 		vec& relation = embedding_relation[name_relation[triplet.second]];
-		vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
-		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
-		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
+		vec head_grad(dim, 1);
+		vec tail_grad(dim, 1);
+		vec relation_grad(dim, 1);
 
-		vector<double>	scores(set_relation.size());
-		double			total_score = 0;
-		for(auto i=0; i<set_relation.size(); ++i)
+		double total_normalizor = 0;
+		double sign_components[8] = {-1,1,1,-1,1,-1,-1,-1};
+		for(unsigned i=0; i<8; ++i)
 		{
-			vec error = embedding_entity[name_entity[triplet.first.first]] 
-			+ embedding_relation[i] - embedding_entity[name_entity[triplet.first.second]];
+			bool head = i & 0x001;
+			bool tail = i & 0x100;
+			bool relation = i & 0x010;
 
-			scores[i] = exp(-sum(abs(error)));
+			pair<pair<string, string>,string> triplet_sample;
+			sample_triplet(triplet, triplet_sample, head, relation, tail);
+
+			double prob = (prob_triplets(triplet_sample));
+			if (_isnan(prob))
+				continue;
+
+			total_normalizor += prob;
+			if (head == false)
+				head_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
+			if (tail == false)
+				tail_grad -= -sign_components[i] * prob 	* error_triplets(triplet_sample);
+			if (relation == false)
+				relation_grad -= sign_components[i] * prob * error_triplets(triplet_sample);
 		}
 
-		for_each(scores.begin(), scores.end(), [&](double& elem){total_score += elem;});
+		head_grad /= total_normalizor;
+		tail_grad /= total_normalizor;
+		relation_grad /= total_normalizor;
 
-		head -= alpha * sign(head + relation - tail); 
-		tail += alpha * sign(head + relation - tail);
-		relation -= alpha * sign(head + relation - tail);
-		
-		for(auto r=0; r<set_relation.size(); ++r)
+		if (total_normalizor<1e-5)
 		{
-			head += alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail); 
-			tail -= alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail);
-			embedding_relation[r] += alpha * scores[r] / total_score * sign(head + embedding_relation[r] - tail);
+			head_grad = vec(dim, 1);
+			tail_grad = vec(dim, 1);
+			relation_grad = vec(dim, 1);
 		}
 
-		//std::fill(scores.begin(), scores.end(), 0);
-		//for(auto i=0; i<set_relation.size(); ++i)
-		//{
-		//	vec error = embedding_entity[name_entity[triplet_f.first.first]] 
-		//	+ embedding_relation[i] - embedding_entity[name_entity[triplet_f.first.second]];
+		head_grad += error_triplets(triplet);
+		tail_grad += - error_triplets(triplet);
+		relation_grad += error_triplets(triplet);
 
-		//	scores[i] = exp(-sum(abs(error)));
-		//}
-
-		//total_score = 0;
-		//for_each(scores.begin(), scores.end(), [&](double& elem){total_score += elem;});
-
-
-		//head_f += alpha * sign(head_f + relation_f - tail_f); 
-		//tail_f -= alpha * sign(head_f + relation_f - tail_f);
-		//relation_f += alpha * sign(head_f + relation_f - tail_f);
-
-		//for(auto r=0; r<set_relation.size(); ++r)
-		//{
-		//	head_f -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
-		//	tail_f += alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
-		//	embedding_relation[r] -= alpha * scores[r] / total_score * sign(head_f + embedding_relation[r] - tail_f); 
-		//}
+		head -= alpha * head_grad;
+		tail -= alpha * tail_grad;
+		relation -= alpha * relation_grad;
 
 		head = normalise(head);
 		tail = normalise(tail);
 		relation = normalise(relation);
-		head_f = normalise(head_f);
-		tail_f = normalise(tail_f);
-		relation_f = normalise(relation_f);
 	}
 };
