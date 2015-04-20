@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[])
 {
-	EmbeddingModel*	Model = new TransMPIP(50, 0.02, 1);
+	EmbeddingModel*	Model = new TransGMPCosine(50, 0.02, 1);
 	Model->run();
 
 	return 0;
