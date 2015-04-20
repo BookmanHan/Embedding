@@ -33,12 +33,14 @@ protected:
 	map<string, vector<string>>     rel_tails;
 
 protected:
-	const double alpha;
+	const double	alpha;
+	unsigned int	epos;
 
 public:
 	EmbeddingModel(double alpha)
 		:alpha(alpha)
 	{
+		epos = 0;
 		load_training("D:\\Data\\Wordnet\\train.txt", data_train);
 		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false);
 		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false);
@@ -178,7 +180,7 @@ public:
 			}
 		}
 
-		cout<<"Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size())<<endl;
+		cout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size())<<endl;
 		return real_hit/(data_test_true.size() + data_test_false.size());
 	}
 
@@ -241,8 +243,10 @@ public:
 public:
 	virtual void run()
 	{
+		epos = 0;
 		while(true)
 		{
+			++ epos;
 			train(alpha);
 			test();
 		}
@@ -279,6 +283,9 @@ protected:
 	vector<vec>	embedding_entity;
 	vector<vec>	embedding_relation;
 	const unsigned	dim;
+
+protected:
+	enum componet	{componet_head, componet_tail, componet_relation, componet_matr};
 
 public:
 	GeometricEmbeddingModel(int dim, double alpha)

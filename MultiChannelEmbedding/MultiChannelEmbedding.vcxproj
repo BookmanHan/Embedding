@@ -246,7 +246,6 @@
   <ItemGroup>
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="Embedding_Geometric.hpp" />
-    <ClInclude Include="Embedding_ProbCube.hpp" />
     <ClInclude Include="Embedding_MultiChannel.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

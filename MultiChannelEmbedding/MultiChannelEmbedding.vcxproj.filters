@@ -18,9 +18,6 @@
     <ClInclude Include="Embedding_Geometric.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="Embedding_ProbCube.hpp">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="Embedding_MultiChannel.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
