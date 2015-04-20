@@ -35,6 +35,7 @@ protected:
 protected:
 	const double	alpha;
 	unsigned int	epos;
+	double			best_result;
 
 public:
 	EmbeddingModel(double alpha)
@@ -180,7 +181,10 @@ public:
 			}
 		}
 
-		cout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size())<<endl;
+		cout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size());
+		best_result = max(best_result, real_hit/(data_test_true.size() + data_test_false.size()));
+		cout<<", Best = "<<best_result<<endl;
+
 		return real_hit/(data_test_true.size() + data_test_false.size());
 	}
 
@@ -243,6 +247,7 @@ public:
 public:
 	virtual void run()
 	{
+		best_result = 0;
 		epos = 0;
 		while(true)
 		{
@@ -310,6 +315,6 @@ public:
 		:GeometricEmbeddingModel(dim, alpha)
 	{
 		mat_relation.resize(set_relation.size());
-		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = randu(dim,dim);});
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
 	}
 };

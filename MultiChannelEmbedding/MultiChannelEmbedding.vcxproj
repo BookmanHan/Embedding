@@ -60,7 +60,7 @@
     <PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <UseIntelMKL>Parallel</UseIntelMKL>
+    <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -164,13 +164,14 @@
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
       <OpenMP>GenerateParallelCode</OpenMP>
       <Cpp0xSupport>true</Cpp0xSupport>
+      <AdditionalOptions> /Qopenmp -I"%MKLROOT%"/include %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mkl_intel_c.lib;mkl_core.lib;mkl_intel_thread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mkl_intel_c_dll.lib;mkl_core_dll.lib;mkl_intel_thread_dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Run.1|Win32'">

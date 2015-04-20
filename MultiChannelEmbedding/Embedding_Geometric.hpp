@@ -188,7 +188,7 @@ public:
 
 public:
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet ) = 0;
-	double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
+	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
 	{
 		return prob_triplets(triplet);
 	}
@@ -242,10 +242,13 @@ public:
 				}
 			}
 		}
-
-		head_grad /= total_normalizor;
-		tail_grad /= total_normalizor;
-		relation_grad /= total_normalizor;
+		
+		if (total_normalizor != 0)
+		{
+			head_grad /= total_normalizor;
+			tail_grad /= total_normalizor;
+			relation_grad /= total_normalizor;
+		}
 
 		head_grad += grad(triplet, componet::componet_head);
 		tail_grad += grad(triplet, componet::componet_tail);
@@ -279,7 +282,7 @@ public:
 
 public:
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet ) = 0;
-	double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
+	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
 	{
 		return prob_triplets(triplet);
 	}
@@ -297,6 +300,7 @@ public:
 		vec head_grad(dim, 1, fill::zeros);
 		vec tail_grad(dim, 1, fill::zeros);
 		vec relation_grad(dim, 1, fill::zeros);
+		mat mat_grad(dim, dim, fill::zeros);
 
 		double total_normalizor = 0;
 		double sign_components[8] = {1,-1,-1,1,-1,1,1,1};
@@ -318,32 +322,41 @@ public:
 				if (head == false)
 				{
 					head_grad -= sign_components[i] * prob 
-						* grad(triplet_sample, componet::componet_head);
+						* grad(triplet_sample, GeometricEmbeddingModel::componet_head);
 				}
 				if (tail == false)
 				{
 					tail_grad -= sign_components[i] * prob 
-						* grad(triplet_sample, componet::componet_tail);
+						* grad(triplet_sample, GeometricEmbeddingModel::componet_tail);
 				}
 				if (relation == false)
 				{
 					relation_grad -= sign_components[i] * prob 
-						* grad(triplet_sample, componet::componet_relation);
+						* grad(triplet_sample, GeometricEmbeddingModel::componet_relation);
 				}
+
+				mat_grad -= sign_components[i] * prob
+						* grad_matr(triplet_sample, GeometricEmbeddingModel::componet_matr);
 			}
 		}
 
-		head_grad /= total_normalizor;
-		tail_grad /= total_normalizor;
-		relation_grad /= total_normalizor;
+		if (total_normalizor != 0)
+		{
+			head_grad /= total_normalizor;
+			tail_grad /= total_normalizor;
+			relation_grad /= total_normalizor;
+			mat_grad /= total_normalizor;
+		}
 
-		head_grad += grad(triplet, componet_head);
-		tail_grad += grad(triplet, componet_tail);
-		relation_grad += grad(triplet, componet_relation);
+		head_grad += grad(triplet, GeometricEmbeddingModel::componet_head);
+		tail_grad += grad(triplet, GeometricEmbeddingModel::componet_tail);
+		relation_grad += grad(triplet, GeometricEmbeddingModel::componet_relation);
+		mat_grad += grad_matr(triplet, GeometricEmbeddingModel::componet_matr);
 
 		head -= alpha * head_grad;
 		tail -= alpha * tail_grad;
 		relation -= alpha * relation_grad;
+		mat_relation[name_relation[triplet.second]] -= alpha * mat_grad;
 
 		head = normalise(head);
 		tail = normalise(tail);
@@ -474,5 +487,105 @@ public:
 			- embedding_entity[name_entity[triplet.first.second]]);
 			break;
 		}
+	}
+};
+
+class TransGGMPR
+	:public TransGGMP
+{
+public:
+	TransGGMPR(int dim, double alpha, int sampling_times)
+		:TransGGMP(dim, alpha, sampling_times)
+	{
+		;
+	}
+
+public:
+	virtual vec grad( const pair<pair<string, string>,string>& triplet, componet part )
+	{
+		if (epos < 100)
+		{
+			switch(part)
+			{
+			case GeometricEmbeddingModel::componet_head:
+				return sign(embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- embedding_entity[name_entity[triplet.first.second]]);
+				break;
+			case GeometricEmbeddingModel::componet_tail:
+				return - sign(embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- embedding_entity[name_entity[triplet.first.second]]);
+				break;
+			case GeometricEmbeddingModel::componet_relation:
+				return sign(embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- embedding_entity[name_entity[triplet.first.second]]);
+				break;
+			}
+		}
+		else
+		{
+			switch(part)
+			{
+			case GeometricEmbeddingModel::componet_head:
+				return mat_relation[name_relation[triplet.second]]
+				* (mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]);
+				break;
+			case GeometricEmbeddingModel::componet_tail:
+				return - mat_relation[name_relation[triplet.second]]
+				* ( mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]);
+				break;
+			case GeometricEmbeddingModel::componet_relation:
+				return (
+					mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]);
+				break;
+			}
+		}
+	}
+
+	virtual mat grad_matr( const pair<pair<string, string>,string>& triplet, componet part )
+	{
+		return (mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]) 
+			* (embedding_entity[name_entity[triplet.first.first]]
+			- embedding_entity[name_entity[triplet.first.second]]).t();
+	}
+
+	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		if (epos < 100)
+			return  - sum(abs(
+				embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- embedding_entity[name_entity[triplet.first.second]]));
+		else 
+			return - norm(
+				mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]);
+	}
+
+	virtual void train( double alpha )
+	{
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
+		GeometricEmbeddingModel::train(alpha);
 	}
 };
