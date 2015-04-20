@@ -272,47 +272,6 @@ public:
 	}
 };
 
-class CubeEmbeddingModel
-	:public EmbeddingModel
-{
-protected:
-	vector<mat>		embedding;
-
-public:
-	CubeEmbeddingModel(double alpha)
-		:EmbeddingModel(alpha)
-	{
-		embedding.resize(set_relation.size());
-		for(auto i=embedding.begin(); i!=embedding.end(); ++i)
-		{
-			(*i) = randu(set_entity.size(), set_entity.size());
-		}
-	}
-};
-
-class DeepCubeEmbeddingModel
-	:public EmbeddingModel
-{
-protected:
-	vector<field<vec>>		embedding;
-	const unsigned	dim;
-
-public:
-	DeepCubeEmbeddingModel(int dim, double alpha)
-		:dim(dim), EmbeddingModel(alpha)
-	{
-		embedding.resize(set_relation.size());
-		for(auto i=embedding.begin(); i!=embedding.end(); ++i)
-		{
-			i->set_size(set_entity.size(), set_entity.size());
-			for(auto j=i->begin(); j!=i->end(); ++j)
-			{
-				(*j) = randu(dim);
-			}
-		}
-	}
-};
-
 class GeometricEmbeddingModel
 	:public EmbeddingModel
 {

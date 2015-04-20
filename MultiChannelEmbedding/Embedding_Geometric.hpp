@@ -300,6 +300,47 @@ public:
 	}
 };
 
+class TransGMPEN2
+	:public TransGMP
+{
+public:
+	TransGMPEN2(int dim, double alpha, int sampling_times = 2)
+		:TransGMP(dim, alpha, sampling_times)
+	{
+		;
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		return - norm(
+			embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]]);
+	}
+
+	virtual vec grad_head( const pair<pair<string, string>,string>& triplet )
+	{
+		return embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]];
+	}
+
+	virtual vec grad_tail( const pair<pair<string, string>,string>& triplet )
+	{
+		return - (embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]]);
+	}
+
+	virtual vec grad_rel( const pair<pair<string, string>,string>& triplet )
+	{
+		return embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]];
+	}
+};
+
 class TransGMPCosine
 	:public TransGMP
 {
@@ -324,19 +365,19 @@ public:
 
 	virtual vec grad_head( const pair<pair<string, string>,string>& triplet )
 	{
-		return embedding_relation[name_relation[triplet.second]]
-		- embedding_entity[name_entity[triplet.first.second]];
+		return (embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]]);
 	}
 
 	virtual vec grad_tail( const pair<pair<string, string>,string>& triplet )
 	{
-		return - embedding_entity[name_entity[triplet.first.first]]
-		+ embedding_relation[name_relation[triplet.second]];
+		return (- embedding_entity[name_entity[triplet.first.first]]
+			- embedding_relation[name_relation[triplet.second]]);
 	}
 
 	virtual vec grad_rel( const pair<pair<string, string>,string>& triplet )
 	{
-		return embedding_entity[name_entity[triplet.first.first]]
-		- embedding_entity[name_entity[triplet.first.second]];
+		return (embedding_entity[name_entity[triplet.first.first]]
+			- embedding_entity[name_entity[triplet.first.second]]);
 	}
 };
