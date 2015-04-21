@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cctype>
+#include <boost/progress.hpp>
 
 using namespace std;
 using namespace arma;
@@ -17,7 +18,8 @@ using namespace arma;
 class EmbeddingModel
 {
 protected:
-	set<pair<pair<string, string>, string>>	data_train;
+	set<pair<pair<string, string>, string>>	check_data_train;
+	vector<pair<pair<string, string>, string>>	data_train;
 	vector<pair<pair<string, string>, string>>	data_dev_true;
 	vector<pair<pair<string, string>, string>>	data_dev_false;
 	vector<pair<pair<string, string>, string>>	data_test_true;
@@ -26,11 +28,15 @@ protected:
 	set<string>	set_relation;
 	vector<string>	number_entity;
 	vector<string>	number_relation;
+	vector<double>		relation_tph;
+	vector<double>		relation_hpt;		
 	map<string, int>	name_entity;
 	map<string, int>	name_relation;
 	map<string, int>	count_entity;
-	map<string, vector<string>>     rel_heads;
-	map<string, vector<string>>     rel_tails;
+	map<string, map<string, vector<string>>>     rel_heads;
+	map<string, map<string, vector<string>>>     rel_tails;
+	map<string, vector<string>>			gen_head;
+	map<string, vector<string>>			gen_tail;
 
 protected:
 	const double	alpha;
@@ -43,8 +49,30 @@ public:
 	{
 		epos = 0;
 		load_training("D:\\Data\\Wordnet\\train.txt", data_train);
-		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false);
-		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false);
+		relation_hpt.resize(set_relation.size());
+		relation_tph.resize(set_relation.size());
+		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
+		{
+			double sum = 0;
+			double total = 0;
+			for(auto ds=rel_heads[*i].begin(); ds!=rel_heads[*i].end(); ++ds)
+			{
+				++ sum;
+				total += ds->second.size();
+			}
+			relation_tph[name_relation[*i]] = total / sum;
+		}
+		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
+		{
+			double sum = 0;
+			double total = 0;
+			for(auto ds=rel_tails[*i].begin(); ds!=rel_tails[*i].end(); ++ds)
+			{
+				++ sum;
+				total += ds->second.size();
+			}
+			relation_hpt[name_relation[*i]] = total / sum;
+		}
 
 		number_entity.resize(set_entity.size());
 		number_relation.resize(set_relation.size());
@@ -56,24 +84,26 @@ public:
 		{
 			number_relation[i->second] = i->first;
 		}
+
+		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false);
+		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false);
 	}
 
-	void load_training(const string& filename, set<pair<pair<string, string>,string>>& vin)
+	void load_training(const string& filename, vector<pair<pair<string, string>,string>>& vin)
 	{
 		fstream fin(filename);
 		while(!fin.eof())
 		{
 			string head, tail, relation;
 			fin>>head>>relation>>tail;
-			vin.insert(make_pair(make_pair(head,tail),relation));
+			vin.push_back(make_pair(make_pair(head,tail),relation));
+			check_data_train.insert(make_pair(make_pair(head,tail),relation));
 
 			set_entity.insert(head);
 			set_entity.insert(tail);
 			set_relation.insert(relation);
 			++ count_entity[head];
 			++ count_entity[tail];
-			rel_heads[relation].push_back(head);
-			rel_tails[relation].push_back(tail);
 
 			if (name_entity.find(head) == name_entity.end())
 			{
@@ -89,6 +119,11 @@ public:
 			{
 				name_relation.insert(make_pair(relation, name_relation.size()));
 			}
+
+			rel_heads[relation][head].push_back(tail);
+			rel_tails[relation][tail].push_back(head);
+			gen_head[relation].push_back(head);
+			gen_tail[relation].push_back(tail);
 		}
 
 		fin.close();
@@ -96,21 +131,38 @@ public:
 
 	void load_testing(	const string& filename, 
 		vector<pair<pair<string, string>,string>>& vin_true,
-		vector<pair<pair<string, string>,string>>& vin_false)
+		vector<pair<pair<string, string>,string>>& vin_false,
+		bool self_sampling = false)
 	{
 		fstream fin(filename);
-		while(!fin.eof())
+		if (self_sampling == false)
 		{
-			string head, tail, relation;
-			int flag_true;
+			while(!fin.eof())
+			{
+				string head, tail, relation;
+				int flag_true;
 
-			fin>>head>>relation>>tail;
-			fin>>flag_true;
+				fin>>head>>relation>>tail;
+				fin>>flag_true;
 
-			if (flag_true == 1)
-				vin_true.push_back(make_pair(make_pair(head,tail),relation));
-			else
-				vin_false.push_back(make_pair(make_pair(head, tail),relation));
+				if (flag_true == 1)
+					vin_true.push_back(make_pair(make_pair(head,tail),relation));
+				else
+					vin_false.push_back(make_pair(make_pair(head, tail),relation));
+			}
+		}
+		else
+		{
+			while(!fin.eof())
+			{
+				string head, tail, relation;
+				pair<pair<string, string>,string>	sample_false;
+				fin>>head>>relation>>tail;
+				sample_false_triplet(make_pair(make_pair(head, tail), relation), sample_false);
+
+				vin_true.push_back(make_pair(make_pair(head, tail),relation));
+				vin_false.push_back(sample_false);
+			}
 		}
 
 		fin.close();
@@ -190,6 +242,7 @@ public:
 
 	virtual void train(double alpha)
 	{
+#pragma omp parallel for
 		for(auto i=data_train.begin(); i!=data_train.end(); ++i)
 		{
 			train_once(*i, alpha);
@@ -200,24 +253,23 @@ public:
 	void sample_false_triplet(	const pair<pair<string,string>,string>& origin,
 								pair<pair<string,string>,string>& triplet)
 	{
-		double prob = static_cast<double>(count_entity[origin.first.first])
-			/static_cast<double>(count_entity[origin.first.first] + count_entity[origin.first.second]);
-	
+		
+		double prob = relation_hpt[name_relation[origin.second]]
+			/(relation_hpt[name_relation[origin.second]] + relation_tph[name_relation[origin.second]]);
+		
+		triplet = origin;
 		while(true)
 		{
-			triplet = origin;
 			if(rand()%1000 < 1000 * prob)
 			{
-				triplet.first.first = rel_heads[triplet.second]
-				[rand()%rel_heads[triplet.second].size()];
+				triplet.first.second = number_entity[rand()%number_entity.size()];
 			}
 			else
 			{
-				triplet.first.second = rel_tails[triplet.second]
-				[rand()%rel_tails[triplet.second].size()];
+				triplet.first.first = number_entity[rand()%number_entity.size()];
 			}
 
-			if (data_train.find(triplet) == data_train.end())
+			if (check_data_train.find(triplet) == check_data_train.end())
 				return;
 		}
 	}
@@ -234,22 +286,20 @@ public:
 		}
 		if (head)
 		{
-			triplet.first.first = rel_heads[triplet.second]
-				[rand()%rel_heads[triplet.second].size()];
+			triplet.first.first = number_entity[rand()%number_entity.size()];
 		}
 		if (tail)
 		{
-			triplet.first.second = rel_tails[triplet.second]
-				[rand()%rel_tails[triplet.second].size()];
+			triplet.first.second = number_entity[rand()%number_entity.size()];
 		}
 	}
 
 public:
-	virtual void run()
+	virtual void run(int max_epos = 500)
 	{
 		best_result = 0;
 		epos = 0;
-		while(true)
+		while(--max_epos)
 		{
 			++ epos;
 			train(alpha);
