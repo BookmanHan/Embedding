@@ -545,6 +545,8 @@ public:
 	{
 		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
 		GeometricEmbeddingModel::train(alpha);
+		//for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
+
 	}
 };
 
@@ -564,55 +566,169 @@ public:
 		switch(part)
 		{
 		case GeometricEmbeddingModel::componet_head:
-			return sign(embedding_entity[name_entity[triplet.first.first]]
+			return mat_relation[name_relation[triplet.second]].t()
+			* sign((mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- embedding_entity[name_entity[triplet.first.second]]);
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]));
 			break;
 		case GeometricEmbeddingModel::componet_tail:
-			return - sign(embedding_entity[name_entity[triplet.first.first]]
+			return - mat_relation[name_relation[triplet.second]].t()
+			* sign((mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- embedding_entity[name_entity[triplet.first.second]]);
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]));
 			break;
 		case GeometricEmbeddingModel::componet_relation:
-			return (embedding_entity[name_entity[triplet.first.first]]
+			return sign((mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- embedding_entity[name_entity[triplet.first.second]]);
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]));
 			break;
 		}
 	}
 
 	virtual mat grad_matr( const pair<pair<string, string>,string>& triplet, componet part )
 	{
-		return abs(embedding_entity[name_entity[triplet.first.first]]
+		return sign((mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- embedding_entity[name_entity[triplet.first.second]])
-			* abs(embedding_entity[name_entity[triplet.first.first]]
-			+ embedding_relation[name_relation[triplet.second]]
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]))
+			* (embedding_entity[name_entity[triplet.first.first]]
 			- embedding_entity[name_entity[triplet.first.second]]).t();
+
 	}
 
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
 	{
-		return as_scalar(abs(embedding_entity[name_entity[triplet.first.first]]
+		return - norm((mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- embedding_entity[name_entity[triplet.first.second]]).t()
-			* mat_relation[name_relation[triplet.second]]
-			* abs(embedding_entity[name_entity[triplet.first.first]]
-			+ embedding_relation[name_relation[triplet.second]]
-			- embedding_entity[name_entity[triplet.first.second]]));
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]), 1);
 	}
 
 	virtual void train( double alpha )
 	{
-		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
+		//for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
 		GeometricEmbeddingModel::train(alpha);
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
 	}
+};
 
-	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error )
+class TransGGMPRM
+	:public TransGGMP
+{
+public:
+	TransGGMPRM(int dim, double alpha, int sampling_times)
+		:TransGGMP(dim, alpha, sampling_times)
 	{
-		return - sum(abs(embedding_entity[name_entity[triplet.first.first]]
-		+ embedding_relation[name_relation[triplet.second]]
-		- embedding_entity[name_entity[triplet.first.second]]));
+		;
 	}
 
+public:
+	virtual vec grad( const pair<pair<string, string>,string>& triplet, componet part )
+	{
+		if (epos < 50)
+		{
+			switch(part)
+			{
+			case GeometricEmbeddingModel::componet_head:
+				return sign((mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]));
+				break;
+			case GeometricEmbeddingModel::componet_tail:
+				return - sign((mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]));
+				break;
+			case GeometricEmbeddingModel::componet_relation:
+				return sign((mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]));
+				break;
+			}
+		}
+		else
+		{
+			switch(part)
+			{
+			case GeometricEmbeddingModel::componet_head:
+				return mat_relation[name_relation[triplet.second]].t()
+					* sign((mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]));
+				break;
+			case GeometricEmbeddingModel::componet_tail:
+				return - mat_relation[name_relation[triplet.second]].t()
+					* sign((mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]));
+				break;
+			case GeometricEmbeddingModel::componet_relation:
+				return sign((mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.first]]
+				+ embedding_relation[name_relation[triplet.second]]
+				- mat_relation[name_relation[triplet.second]]
+				* embedding_entity[name_entity[triplet.first.second]]));
+				break;
+			}
+		}
+	}
+
+	virtual mat grad_matr( const pair<pair<string, string>,string>& triplet, componet part )
+	{
+		if (epos < 50)
+			return (mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]) 
+				* (embedding_entity[name_entity[triplet.first.first]]
+			- embedding_entity[name_entity[triplet.first.second]]).t();
+		else
+			return sign((mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- mat_relation[name_relation[triplet.second]]
+			* embedding_entity[name_entity[triplet.first.second]]))
+				* (embedding_entity[name_entity[triplet.first.first]]
+			- embedding_entity[name_entity[triplet.first.second]]).t();
+
+
+	}
+
+	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		return - sum(abs(
+			mat_relation[name_relation[triplet.second]]
+		* embedding_entity[name_entity[triplet.first.first]]
+		+ embedding_relation[name_relation[triplet.second]]
+		- mat_relation[name_relation[triplet.second]]
+		* embedding_entity[name_entity[triplet.first.second]]));
+	}
+
+	virtual void train( double alpha )
+	{
+		if (epos > 50)
+			for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
+		
+		GeometricEmbeddingModel::train(alpha);
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
+	}
 };

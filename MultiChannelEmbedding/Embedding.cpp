@@ -18,8 +18,8 @@
 int main(int argc, char* argv[])
 {
 	omp_set_num_threads(4);
-	EmbeddingModel*	Model = new TransGGMPR(50, 0.02, 1);
-	Model->run();
+	EmbeddingModel*	Model = new TransGGMPRM(50, 0.01, 1);
+	Model->run(1000);
 
 	return 0;
 }
