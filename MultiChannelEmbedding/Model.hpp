@@ -161,7 +161,7 @@ public:
 				sample_false_triplet(make_pair(make_pair(head, tail), relation), sample_false);
 
 				vin_true.push_back(make_pair(make_pair(head, tail),relation));
-				vin_false.push_back(sample_false);
+				vin_false.push_back(sample_false); 
 			}
 		}
 
@@ -291,6 +291,22 @@ public:
 		if (tail)
 		{
 			triplet.first.second = number_entity[rand()%number_entity.size()];
+		}
+	}
+
+public:
+	void search_head(const string& tail, const string& relation)
+	{
+		vector<pair<double, string>>	runs;
+		for(auto i=set_entity.begin(); i!=set_entity.end(); ++i)
+		{
+			runs.push_back(make_pair(- prob_triplets(make_pair(make_pair(*i, tail), relation)),*i));
+		}
+
+		sort(runs.begin(), runs.end());
+		for(auto i=0; i<30; ++i)
+		{
+			cout<<runs[i].second<<endl;
 		}
 	}
 
