@@ -48,7 +48,7 @@ public:
 		:alpha(alpha)
 	{
 		epos = 0;
-		load_training("D:\\Data\\Wordnet\\train.txt", data_train);
+		load_training("D:\\Data\\Wordnet-18\\train.txt", data_train);
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
 		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
@@ -85,8 +85,8 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false);
-		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false);
+		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
 	}
 
 	void load_training(const string& filename, vector<pair<pair<string, string>,string>>& vin)
@@ -162,6 +162,8 @@ public:
 
 				vin_true.push_back(make_pair(make_pair(head, tail),relation));
 				vin_false.push_back(sample_false); 
+
+				check_data_train.insert(make_pair(make_pair(head, tail), relation));
 			}
 		}
 
@@ -249,6 +251,37 @@ public:
 		}
 	}
 
+	void test_hit()
+	{
+		double mean = 0;
+		double hits = 0;
+
+#pragma omp parallel for
+		for(auto i=data_test_true.begin(); i!=data_test_true.end(); ++i)
+		{
+			auto t = *i;
+			unsigned rmean = 0;
+			double score_i = prob_triplets(*i);
+			for(auto j=set_entity.begin(); j!=set_entity.end(); ++j)
+			{
+				t.first.second = *j;
+				if (check_data_train.find(t) != check_data_train.end())
+					continue;
+
+				if (score_i < prob_triplets(t))
+					++ rmean;
+			}
+
+			mean += rmean;
+			if (rmean <= 10)
+				++ hits;
+		}
+
+		cout<<endl;
+		cout<<"MEANS = "<<mean/data_test_true.size()<<endl;
+		cout<<"HITS = "<<hits/data_test_true.size()<<endl;
+	}
+
 public:
 	void sample_false_triplet(	const pair<pair<string,string>,string>& origin,
 								pair<pair<string,string>,string>& triplet)
@@ -319,8 +352,16 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			test();
+			//test();
+
+			cout<<epos<<',';
+			if (epos%100 == 0)
+			{
+				test_hit();
+				cout<<endl;
+			}
 		}
+		test_hit();
 	}
 };
 

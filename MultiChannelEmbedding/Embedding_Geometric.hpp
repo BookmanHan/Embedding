@@ -102,12 +102,12 @@ public:
 		tail_f -= alpha * sign(head_f + relation_f - tail_f);
 		relation_f += alpha * sign(head_f + relation_f - tail_f);
 
-		head = normalise(head);
-		tail = normalise(tail);
-		relation = normalise(relation);
-		head_f = normalise(head_f);
-		tail_f = normalise(tail_f);
-		relation_f = normalise(relation_f);
+		//head = normalise(head);
+		//tail = normalise(tail);
+		//relation = normalise(relation);
+		//head_f = normalise(head_f);
+		//tail_f = normalise(tail_f);
+		//relation_f = normalise(relation_f);
 	}
 };
 
@@ -154,12 +154,12 @@ public:
 		tail_f -= alpha * sign(head_f + relation_f - tail_f);
 		relation_f += alpha * sign(head_f + relation_f - tail_f);
 
-		//head = normalise(head);
-		//tail = normalise(tail);
-		//relation = normalise(relation);
-		//head_f = normalise(head_f);
-		//tail_f = normalise(tail_f);
-		//relation_f = normalise(relation_f);
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
 
 		mat_r[name_relation[triplet.second]] -= abs(head + relation - tail) * abs(head + relation - tail).t()
 			- abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
@@ -315,9 +315,9 @@ public:
 		tail -= alpha * tail_grad;
 		relation -= alpha * relation_grad;
 
-		head -= alpha * alpha * (head);
-		tail -= alpha * alpha * (tail);
-		relation -= alpha * alpha * (relation);
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
 	}
 };
 
@@ -387,7 +387,7 @@ public:
 				{
 					relation_grad -= prob * grad(triplet_sample, componet::componet_relation);
 				}
-
+				
 				mat_grad -= prob * grad_matr(triplet_sample, GeometricEmbeddingModel::componet_matr);
 			}
 		}
@@ -542,6 +542,89 @@ public:
 	}
 };
 
+class TransGMPA
+	:public TransGMP
+{
+protected:
+	vector<mat>	mat_r;
+
+public:
+	TransGMPA(int dim, double alpha, int sampling_times=1)
+		:TransGMP(dim, alpha, sampling_times)
+	{
+		mat_r.resize(set_relation.size());
+		for_each(mat_r.begin(), mat_r.end(), [=](mat& m){m=eye(dim,dim);});
+	}
+
+public:
+	virtual vec grad( const pair<pair<string, string>,string>& triplet, componet part )
+	{
+		switch(part)
+		{
+		case GeometricEmbeddingModel::componet_head:
+			return sign(embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]]);
+			break;
+		case GeometricEmbeddingModel::componet_tail:
+			return - sign(embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]]);
+			break;
+		case GeometricEmbeddingModel::componet_relation:
+			return sign(embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
+			- embedding_entity[name_entity[triplet.first.second]]);
+			break;
+		}
+	}
+
+	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		vec error = embedding_entity[name_entity[triplet.first.first]] 
+		+ embedding_relation[name_relation[triplet.second]] 
+		- embedding_entity[name_entity[triplet.first.second]];
+
+		return - as_scalar(abs(error).t()*mat_r[name_relation[triplet.second]]*abs(error));
+	}
+
+	virtual void train( double alpha )
+	{
+		GeometricEmbeddingModel::train(alpha);
+
+		if (epos%100 == 0)
+		{
+			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){m=eye(dim,dim);});
+			for(auto i=data_train.begin(); i!=data_train.end(); ++i)
+			{
+				auto& triplet = *i;
+				vec& head = embedding_entity[name_entity[triplet.first.first]];
+				vec& tail = embedding_entity[name_entity[triplet.first.second]];
+				vec& relation = embedding_relation[name_relation[triplet.second]];
+
+				pair<pair<string, string>,string> triplet_f;
+				sample_false_triplet(triplet, triplet_f);
+				vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
+				vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
+				vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
+
+				mat_r[name_relation[triplet.second]] += 
+					- abs(head + relation - tail) * abs(head + relation - tail).t()
+					+ abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
+			}
+			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){m=normalise(m);});
+		}
+	}
+
+	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet )
+	{
+		return - sum(abs(
+			embedding_entity[name_entity[triplet.first.first]]
+		+ embedding_relation[name_relation[triplet.second]]
+		- embedding_entity[name_entity[triplet.first.second]]));
+	}
+};
+
 class TransGGMPR
 	:public TransGGMP
 {
@@ -588,7 +671,7 @@ public:
 		+ embedding_relation[name_relation[triplet.second]]
 		- mat_relation[name_relation[triplet.second]]
 		* embedding_entity[name_entity[triplet.first.second]]) 
-		* (embedding_entity[name_entity[triplet.first.first]]
+			* (embedding_entity[name_entity[triplet.first.first]]
 		- embedding_entity[name_entity[triplet.first.second]]).t();
 	}
 
@@ -606,8 +689,6 @@ public:
 	{
 		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
 		GeometricEmbeddingModel::train(alpha);
-		//for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
-
 	}
 };
 
@@ -627,41 +708,31 @@ public:
 		switch(part)
 		{
 		case GeometricEmbeddingModel::componet_head:
-			return mat_relation[name_relation[triplet.second]].t()
-			* sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
+			return embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]));
+			- embedding_entity[name_entity[triplet.first.second]];
 			break;
 		case GeometricEmbeddingModel::componet_tail:
-			return - mat_relation[name_relation[triplet.second]].t()
-			* sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
+			return - (embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]));
+			- embedding_entity[name_entity[triplet.first.second]]);
 			break;
 		case GeometricEmbeddingModel::componet_relation:
-			return sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
+			return embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]));
+			- embedding_entity[name_entity[triplet.first.second]];
 			break;
 		}
 	}
 
 	virtual mat grad_matr( const pair<pair<string, string>,string>& triplet, componet part )
 	{
-		return sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
+		return abs(embedding_entity[name_entity[triplet.first.first]]
 			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]))
-			* (embedding_entity[name_entity[triplet.first.first]]
+			- embedding_entity[name_entity[triplet.first.second]])
+			* abs(embedding_entity[name_entity[triplet.first.first]]
+			+ embedding_relation[name_relation[triplet.second]]
 			- embedding_entity[name_entity[triplet.first.second]]).t();
-
 	}
 
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
@@ -675,9 +746,9 @@ public:
 
 	virtual void train( double alpha )
 	{
-		//for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
 		GeometricEmbeddingModel::train(alpha);
-		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
+		//for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
 	}
 };
 
