@@ -13,13 +13,13 @@
 // 不放回采样。
 // Wordnet18 @ TransE : TransGMPE = 90.0% : 97.3%
 // Wordnet11 @ TransE : TransGMPE = 75.9% : 84.3%
-// Wordnet11 @ TransR : TransGGMPR = 85.5% : 85.8%
+// Wordnet11 @ TransR : TransGGMPR = 85.5% : 86.2%
 // Freebase13 @ TransE : TransGMPE = 
 
 int main(int argc, char* argv[])
 {
 	omp_set_num_threads(4);
-	EmbeddingModel*	Model = new TransGMPA(50, 0.01);
+	EmbeddingModel*	Model = new TransGGMPR(50, 0.02, 1);
 	Model->run(3000);
 
 	return 0;

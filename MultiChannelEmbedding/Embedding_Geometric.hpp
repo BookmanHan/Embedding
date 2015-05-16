@@ -315,9 +315,9 @@ public:
 		tail -= alpha * tail_grad;
 		relation -= alpha * relation_grad;
 
-		head = normalise(head);
-		tail = normalise(tail);
-		relation = normalise(relation);
+		//head = normalise(head);
+		//tail = normalise(tail);
+		//relation = normalise(relation);
 	}
 };
 
@@ -338,22 +338,22 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet ) = 0;
-	virtual double probability_triplets( const pair<pair<string, string>,string>& triplet, vec & error)
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) = 0;
+	virtual double probability_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet, vec & error)
 	{
 		return prob_triplets(triplet);
 	}
 
 public:
-	virtual vec grad(const pair<pair<string, string>,string>& triplet, componet part) = 0;
-	virtual mat grad_matr(const pair<pair<string, string>,string>& triplet, componet part) = 0;
+	virtual vec grad(const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part) = 0;
+	virtual mat grad_matr(const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part) = 0;
 
 public:
-	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
-		vec& head = embedding_entity[name_entity[triplet.first.first]];
-		vec& tail = embedding_entity[name_entity[triplet.first.second]];
-		vec& relation = embedding_relation[name_relation[triplet.second]];
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
 		vec head_grad(dim, 1, fill::zeros);
 		vec tail_grad(dim, 1, fill::zeros);
 		vec relation_grad(dim, 1, fill::zeros);
@@ -368,7 +368,7 @@ public:
 				bool tail = i & 0x100;
 				bool relation = i & 0x010;
 
-				pair<pair<string, string>,string> triplet_sample;
+				pair<pair<unsigned, unsigned>,unsigned> triplet_sample;
 				sample_triplet(triplet, triplet_sample, head, relation, tail);
 
 				double prob = exp(probability_triplets(triplet_sample, error));
@@ -408,7 +408,7 @@ public:
 		head -= alpha * head_grad;
 		tail -= alpha * tail_grad;
 		relation -= alpha * relation_grad;
-		mat_relation[name_relation[triplet.second]] -= alpha * mat_grad;
+		mat_relation[triplet.second] -= alpha * mat_grad;
 
 		head = normalise(head);
 		tail = normalise(tail);
@@ -636,59 +636,202 @@ public:
 	}
 
 public:
-	virtual vec grad( const pair<pair<string, string>,string>& triplet, componet part )
+	virtual vec grad( const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part )
 	{
 		switch(part)
 		{
 		case GeometricEmbeddingModel::componet_head:
-			return sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
-			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]));
+			return sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second] * embedding_entity[triplet.first.second]);
 			break;
 		case GeometricEmbeddingModel::componet_tail:
-			return - sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
-			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]));
+			return - sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second] * embedding_entity[triplet.first.second]);
 			break;
 		case GeometricEmbeddingModel::componet_relation:
-			return sign((mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.first]]
-			+ embedding_relation[name_relation[triplet.second]]
-			- mat_relation[name_relation[triplet.second]]
-			* embedding_entity[name_entity[triplet.first.second]]));
+			return sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second] * embedding_entity[triplet.first.second]);
 			break;
 		}
 	}
 
-	virtual mat grad_matr( const pair<pair<string, string>,string>& triplet, componet part )
+	virtual mat grad_matr( const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part )
 	{
-		return (mat_relation[name_relation[triplet.second]]
-		* embedding_entity[name_entity[triplet.first.first]]
-		+ embedding_relation[name_relation[triplet.second]]
-		- mat_relation[name_relation[triplet.second]]
-		* embedding_entity[name_entity[triplet.first.second]]) 
-			* (embedding_entity[name_entity[triplet.first.first]]
-		- embedding_entity[name_entity[triplet.first.second]]).t();
+		return sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- mat_relation[triplet.second] * embedding_entity[triplet.first.second])
+			* (embedding_entity[triplet.first.first] - embedding_entity[triplet.first.second]).t();
 	}
 
-	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
 	{
-		return - sum(abs(
-			mat_relation[name_relation[triplet.second]]
-		* embedding_entity[name_entity[triplet.first.first]]
-		+ embedding_relation[name_relation[triplet.second]]
-		- mat_relation[name_relation[triplet.second]]
-		* embedding_entity[name_entity[triplet.first.second]]));
+		return - sum(abs(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- mat_relation[triplet.second] * embedding_entity[triplet.first.second]));
 	}
 
 	virtual void train( double alpha )
 	{
 		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
 		GeometricEmbeddingModel::train(alpha);
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = normalise(elem);});
+	}
+};
+
+class TransGGMPRA
+	:public TransGGMP
+{
+protected:
+	vector<mat>	mat_a;
+
+public:
+	TransGGMPRA(int dim, double alpha, int sampling_times)
+		:TransGGMP(dim, alpha, sampling_times)
+	{
+		mat_a.resize(set_relation.size());
+		for_each(mat_a.begin(), mat_a.end(), [&](mat& r){r = eye(dim, dim);});
+	}
+
+public:
+	virtual vec grad( const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part )
+	{
+		switch(part)
+		{
+		case GeometricEmbeddingModel::componet_head:
+			return sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second] * embedding_entity[triplet.first.second]);
+			break;
+		case GeometricEmbeddingModel::componet_tail:
+			return - sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second] * embedding_entity[triplet.first.second]);
+			break;
+		case GeometricEmbeddingModel::componet_relation:
+			return sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second] * embedding_entity[triplet.first.second]);
+			break;
+		}
+	}
+
+	virtual mat grad_matr( const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part )
+	{
+		switch(part)
+		{
+		case GeometricEmbeddingModel::componet_matr:
+			return sign(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second]* embedding_entity[triplet.first.second]) 
+			* (embedding_entity[triplet.first.first] - embedding_entity[triplet.first.second]).t();
+			break;
+		case GeometricEmbeddingModel::componet_mata:
+			return -  abs(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second]* embedding_entity[triplet.first.second]) 
+				* abs(mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- mat_relation[triplet.second]* embedding_entity[triplet.first.second]) .t();
+		}
+	}
+
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		vec error = (mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- mat_relation[triplet.second]* embedding_entity[triplet.first.second]) ;
+
+		return - as_scalar(error.t() * mat_a[triplet.second] * error);
+	}
+
+	virtual void train( double alpha )
+	{
+		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
+		for_each(mat_a.begin(), mat_a.end(), [=](mat& elem){elem = eye(dim,dim);});
+		GeometricEmbeddingModel::train(alpha);
+	}
+
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec head_grad(dim, 1, fill::zeros);
+		vec tail_grad(dim, 1, fill::zeros);
+		vec relation_grad(dim, 1, fill::zeros);
+		mat mat_grad(dim, dim, fill::zeros);
+		mat mata_grad(dim, dim, fill::zeros);
+
+		double total_normalizor = 0;
+		for(auto cnt=0; cnt<sampling_times; ++cnt)
+		{
+			for(unsigned i=0; i<8; ++i)
+			{
+				bool head = i & 0x001;
+				bool tail = i & 0x100;
+				bool relation = i & 0x010;
+
+				pair<pair<unsigned, unsigned>,unsigned> triplet_sample;
+				sample_triplet(triplet, triplet_sample, head, relation, tail);
+
+				double prob = exp(probability_triplets(triplet_sample, error));
+				if (_isnan(prob))
+					continue;
+
+				if (head == false)
+				{
+					head_grad -= prob * grad(triplet_sample, componet::componet_head);
+				}
+				if (tail == false)
+				{
+					tail_grad -= prob * grad(triplet_sample, componet::componet_tail);
+				}
+				if (relation == false)
+				{
+					relation_grad -= prob * grad(triplet_sample, componet::componet_relation);
+				}
+
+				mat_grad -= prob * grad_matr(triplet_sample, GeometricEmbeddingModel::componet_matr);
+				mata_grad -= prob * grad_matr(triplet_sample, GeometricEmbeddingModel::componet_mata);
+			}
+		}
+
+		if (total_normalizor != 0)
+		{
+			head_grad /= total_normalizor;
+			tail_grad /= total_normalizor;
+			relation_grad /= total_normalizor;
+			mat_grad /= total_normalizor;
+			mata_grad /= total_normalizor;
+		}
+
+		head_grad += grad(triplet, GeometricEmbeddingModel::componet_head);
+		tail_grad += grad(triplet, GeometricEmbeddingModel::componet_tail);
+		relation_grad += grad(triplet, GeometricEmbeddingModel::componet_relation);
+		mat_grad += grad_matr(triplet, GeometricEmbeddingModel::componet_matr);
+		mata_grad += grad_matr(triplet, GeometricEmbeddingModel::componet_mata);
+		
+		head -= alpha * head_grad;
+		tail -= alpha * tail_grad;
+		relation -= alpha * relation_grad;
+		mat_relation[triplet.second] -= alpha * mat_grad;
+		mat_a[triplet.second] -= alpha * mata_grad;
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+	}
+
+	virtual double probability_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet, vec & error )
+	{
+		error = (mat_relation[triplet.second] * embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- mat_relation[triplet.second]* embedding_entity[triplet.first.second]) ;
+		
+		return - sum(abs(error));
 	}
 };
 

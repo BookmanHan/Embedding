@@ -24,8 +24,17 @@ protected:
 	vector<pair<pair<string, string>, string>>	data_dev_false;
 	vector<pair<pair<string, string>, string>>	data_test_true;
 	vector<pair<pair<string, string>, string>>	data_test_false;
+	
+	set<pair<pair<unsigned, unsigned>, unsigned>>	i_check_data_train;
+	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_train;
+	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_dev_true;
+	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_dev_false;
+	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_true;
+	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_false;
+
 	set<string>	set_entity;
 	set<string>	set_relation;
+	set<string>	set_tail;
 	vector<string>	number_entity;
 	vector<string>	number_relation;
 	vector<double>		relation_tph;
@@ -48,7 +57,7 @@ public:
 		:alpha(alpha)
 	{
 		epos = 0;
-		load_training("D:\\Data\\Wordnet-18\\train.txt", data_train);
+		load_training("D:\\Data\\Wordnet\\train.txt");
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
 		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
@@ -85,19 +94,23 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
+		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("D:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("D:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
 	}
 
-	void load_training(const string& filename, vector<pair<pair<string, string>,string>>& vin)
+	void load_training(const string& filename)
 	{
 		fstream fin(filename);
 		while(!fin.eof())
 		{
 			string head, tail, relation;
 			fin>>head>>relation>>tail;
-			vin.push_back(make_pair(make_pair(head,tail),relation));
+			data_train.push_back(make_pair(make_pair(head,tail),relation));
+			
 			check_data_train.insert(make_pair(make_pair(head,tail),relation));
+		    set_tail.insert(tail);
 
 			set_entity.insert(head);
 			set_entity.insert(tail);
@@ -124,6 +137,11 @@ public:
 			rel_tails[relation][tail].push_back(head);
 			gen_head[relation].push_back(head);
 			gen_tail[relation].push_back(tail);
+
+			i_check_data_train.insert(make_pair(make_pair(name_entity[head], name_entity[tail]), 
+				name_relation[relation]));
+			i_data_train.push_back(make_pair(make_pair(name_entity[head],name_entity[tail]),
+				name_relation[relation]));
 		}
 
 		fin.close();
@@ -163,6 +181,7 @@ public:
 				vin_true.push_back(make_pair(make_pair(head, tail),relation));
 				vin_false.push_back(sample_false); 
 
+				set_tail.insert(tail);
 				check_data_train.insert(make_pair(make_pair(head, tail), relation));
 			}
 		}
@@ -170,10 +189,77 @@ public:
 		fin.close();
 	}
 
+	void i_load_testing(	const string& filename, 
+		vector<pair<pair<unsigned, unsigned>,unsigned>>& vin_true,
+		vector<pair<pair<unsigned, unsigned>,unsigned>>& vin_false,
+		bool self_sampling = false)
+	{
+		fstream fin(filename);
+		if (self_sampling == false)
+		{
+			while(!fin.eof())
+			{
+				string head, tail, relation;
+				int flag_true;
+
+				fin>>head>>relation>>tail;
+				fin>>flag_true;
+
+				if (flag_true == 1)
+					vin_true.push_back(make_pair(make_pair(name_entity[head], name_entity[tail]),
+						name_relation[relation]));
+				else
+					vin_false.push_back(make_pair(make_pair(name_entity[head], name_entity[tail]),
+					name_relation[relation]));
+			}
+		}
+		else
+		{
+			while(!fin.eof())
+			{
+				string head, tail, relation;
+				pair<pair<unsigned, unsigned>, unsigned>	sample_false;
+				fin>>head>>relation>>tail;
+				sample_false_triplet(make_pair(make_pair(name_entity[head], name_entity[tail]),
+					name_relation[relation]), sample_false);
+
+				vin_true.push_back(make_pair(make_pair(name_entity[head], name_entity[tail]),
+					name_relation[relation]));
+				vin_false.push_back(sample_false); 
+
+				set_tail.insert(tail);
+				i_check_data_train.insert(make_pair(make_pair(name_entity[head], name_entity[tail]),
+					name_relation[relation]));
+			}
+		}
+
+		fin.close();
+	}
+
 public:
-	virtual double prob_triplets(const pair<pair<string, string>,string>& triplet) = 0;
+	virtual double prob_triplets(const pair<pair<string, string>,string>& triplet)
+	{
+		;
+	}
+
+	virtual double prob_triplets(const pair<pair<unsigned, unsigned>,unsigned>& triplet)
+	{
+		return prob_triplets(make_pair(make_pair(number_entity[triplet.first.first],
+			number_entity[triplet.first.second]), number_relation[triplet.second]));
+	}
+
 	virtual double train_once(	const pair<pair<string, string>,string>& triplet,
-		double factor) = 0;
+		double factor) 
+	{
+		;
+	}
+
+	virtual double train_once(	const pair<pair<unsigned, unsigned>,unsigned>& triplet,
+		double factor) 
+	{
+		return train_once(make_pair(make_pair(number_entity[triplet.first.first],
+			number_entity[triplet.first.second]), number_relation[triplet.second]), alpha);
+	}
 
 public:
 	double test()
@@ -182,16 +268,16 @@ public:
 		for(auto r=0; r<set_relation.size(); ++r)
 		{
 			vector<pair<double, bool>>	threshold_dev;
-			for(auto i=data_dev_true.begin(); i!=data_dev_true.end(); ++i)
+			for(auto i=i_data_dev_true.begin(); i!=i_data_dev_true.end(); ++i)
 			{
-				if (name_relation[i->second] != r)
+				if (i->second != r)
 					continue;
 
 				threshold_dev.push_back(make_pair(prob_triplets(*i), true));
 			}
-			for(auto i=data_dev_false.begin(); i!=data_dev_false.end(); ++i)
+			for(auto i=i_data_dev_false.begin(); i!=i_data_dev_false.end(); ++i)
 			{
-				if (name_relation[i->second] != r)
+				if (i->second != r)
 					continue;
 
 				threshold_dev.push_back(make_pair(prob_triplets(*i), false));
@@ -216,18 +302,18 @@ public:
 				}
 			}
 
-			for(auto i=data_test_true.begin(); i!=data_test_true.end(); ++i)
+			for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 			{
-				if (name_relation[i->second] != r)
+				if (i->second != r)
 					continue;
 
 				if (prob_triplets(*i) > threshold)
 					++ real_hit;
 			}
 
-			for(auto i=data_test_false.begin(); i!=data_test_false.end(); ++i)
+			for(auto i=i_data_test_false.begin(); i!=i_data_test_false.end(); ++i)
 			{
-				if (name_relation[i->second] != r)
+				if (i->second != r)
 					continue;
 
 				if (prob_triplets(*i) <= threshold)
@@ -245,7 +331,7 @@ public:
 	virtual void train(double alpha)
 	{
 #pragma omp parallel for
-		for(auto i=data_train.begin(); i!=data_train.end(); ++i)
+		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
 		{
 			train_once(*i, alpha);
 		}
@@ -262,11 +348,11 @@ public:
 			auto t = *i;
 			unsigned rmean = 0;
 			double score_i = prob_triplets(*i);
-			for(auto j=set_entity.begin(); j!=set_entity.end(); ++j)
+			for(auto j=set_tail.begin(); j!=set_tail.end(); ++j)
 			{
 				t.first.second = *j;
-				if (check_data_train.find(t) != check_data_train.end())
-					continue;
+				//if (check_data_train.find(t) != check_data_train.end())
+				//	continue;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
@@ -307,6 +393,30 @@ public:
 		}
 	}
 
+	void sample_false_triplet(	const pair<pair<unsigned,unsigned>,unsigned>& origin,
+		pair<pair<unsigned,unsigned>,unsigned>& triplet)
+	{
+
+		double prob = relation_hpt[origin.second]
+		/(relation_hpt[origin.second] + relation_tph[origin.second]);
+
+		triplet = origin;
+		while(true)
+		{
+			if(rand()%1000 < 1000 * prob)
+			{
+				triplet.first.second = rand()%number_entity.size();
+			}
+			else
+			{
+				triplet.first.first = rand()%number_entity.size();
+			}
+
+			if (i_check_data_train.find(triplet) == i_check_data_train.end())
+				return;
+		}
+	}
+
 	void sample_triplet(	
 		const pair<pair<string,string>,string>& origin,
 		pair<pair<string,string>,string>& triplet,
@@ -324,6 +434,26 @@ public:
 		if (tail)
 		{
 			triplet.first.second = number_entity[rand()%number_entity.size()];
+		}
+	}
+
+	void sample_triplet(	
+		const pair<pair<unsigned,unsigned>,unsigned>& origin,
+		pair<pair<unsigned,unsigned>,unsigned>& triplet,
+		bool head, bool relation, bool tail)
+	{
+		triplet = origin;
+		if (relation)
+		{
+			triplet.second = rand()%number_relation.size();
+		}
+		if (head)
+		{
+			triplet.first.first = rand()%number_entity.size();
+		}
+		if (tail)
+		{
+			triplet.first.second = rand()%number_entity.size();
 		}
 	}
 
@@ -352,14 +482,14 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			//test();
+			test();
 
-			cout<<epos<<',';
-			if (epos%100 == 0)
-			{
-				test_hit();
-				cout<<endl;
-			}
+			//cout<<epos<<',';
+			//if (epos%100 == 0)
+			//{
+			//	test_hit();
+			//	cout<<endl;
+			//}
 		}
 		test_hit();
 	}
@@ -397,7 +527,7 @@ protected:
 	const unsigned	dim;
 
 protected:
-	enum componet	{componet_head, componet_tail, componet_relation, componet_matr};
+	enum componet	{componet_head, componet_tail, componet_relation, componet_matr, componet_mata};
 
 public:
 	GeometricEmbeddingModel(int dim, double alpha)
