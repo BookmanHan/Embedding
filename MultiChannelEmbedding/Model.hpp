@@ -34,9 +34,11 @@ protected:
 
 	set<string>	set_entity;
 	set<string>	set_relation;
-	set<string>	set_tail;
+	vector<set<int>>	set_tail;
 	vector<string>	number_entity;
 	vector<string>	number_relation;
+	vector<double>	prob_head;
+	vector<double> prob_tail;
 	vector<double>		relation_tph;
 	vector<double>		relation_hpt;		
 	map<string, int>	name_entity;
@@ -51,13 +53,17 @@ protected:
 	const double	alpha;
 	unsigned int	epos;
 	double			best_result;
+	double			best_mean;
+	double			best_hitatten;
 
 public:
 	EmbeddingModel(double alpha)
-		:alpha(alpha)
+		:alpha(alpha), best_result(0), best_mean(1e7), best_hitatten(0)
 	{
 		epos = 0;
-		load_training("D:\\Data\\Wordnet\\train.txt");
+		load_training("D:\\Data\\Freebase-15K\\train.txt");
+		load_training("D:\\Data\\Freebase-15K\\dev.txt");
+
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
 		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
@@ -94,10 +100,33 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("D:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("D:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
+		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
+
+		cout<<"Entities = "<<set_entity.size()<<endl;
+
+		set_tail.resize(set_relation.size());
+		prob_head.resize(set_entity.size());
+		prob_tail.resize(set_entity.size());
+		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
+		{
+			set_tail[i->second].insert(i->first.second);
+
+			++ prob_head[i->first.first];
+			++ prob_tail[i->first.second];
+		}
+
+		for(auto & elem : prob_head)
+		{
+			elem /= i_data_train.size();
+		}
+
+		for(auto & elem : prob_tail)
+		{
+			elem /= i_data_train.size();
+		}
 	}
 
 	void load_training(const string& filename)
@@ -110,8 +139,6 @@ public:
 			data_train.push_back(make_pair(make_pair(head,tail),relation));
 			
 			check_data_train.insert(make_pair(make_pair(head,tail),relation));
-		    set_tail.insert(tail);
-
 			set_entity.insert(head);
 			set_entity.insert(tail);
 			set_relation.insert(relation);
@@ -181,7 +208,6 @@ public:
 				vin_true.push_back(make_pair(make_pair(head, tail),relation));
 				vin_false.push_back(sample_false); 
 
-				set_tail.insert(tail);
 				check_data_train.insert(make_pair(make_pair(head, tail), relation));
 			}
 		}
@@ -227,7 +253,6 @@ public:
 					name_relation[relation]));
 				vin_false.push_back(sample_false); 
 
-				set_tail.insert(tail);
 				i_check_data_train.insert(make_pair(make_pair(name_entity[head], name_entity[tail]),
 					name_relation[relation]));
 			}
@@ -257,8 +282,7 @@ public:
 	virtual double train_once(	const pair<pair<unsigned, unsigned>,unsigned>& triplet,
 		double factor) 
 	{
-		return train_once(make_pair(make_pair(number_entity[triplet.first.first],
-			number_entity[triplet.first.second]), number_relation[triplet.second]), alpha);
+		train_once(make_pair(make_pair(triplet.first.first,triplet.first.second), triplet.second), alpha);
 	}
 
 public:
@@ -341,31 +365,43 @@ public:
 	{
 		double mean = 0;
 		double hits = 0;
+		double total = 0;
 
 #pragma omp parallel for
-		for(auto i=data_test_true.begin(); i!=data_test_true.end(); ++i)
+		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 		{
+			++ total;
+
 			auto t = *i;
 			unsigned rmean = 0;
 			double score_i = prob_triplets(*i);
-			for(auto j=set_tail.begin(); j!=set_tail.end(); ++j)
+			for(auto j=set_tail[t.second].begin(); j!=set_tail[t.second].end(); ++j)
 			{
 				t.first.second = *j;
-				//if (check_data_train.find(t) != check_data_train.end())
+				//if (i_check_data_train.find(t) != i_check_data_train.end())
 				//	continue;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
 			}
 
-			mean += rmean;
-			if (rmean <= 10)
-				++ hits;
+#pragma omp critical
+			{
+				mean += rmean;
+				if (rmean <= 10)
+					++ hits;
+			}
 		}
 
 		cout<<endl;
-		cout<<"MEANS = "<<mean/data_test_true.size()<<endl;
-		cout<<"HITS = "<<hits/data_test_true.size()<<endl;
+		cout<<"MEANS = "<<mean/total<<endl;
+		cout<<"HITS = "<<hits/total<<endl;
+
+		best_mean = min(best_mean, mean/total);
+		best_hitatten = max(best_hitatten, hits/total);
+
+		cout<<"BestMEANS = "<<best_mean<<endl;
+		cout<<"BestHITS = "<<best_hitatten<<endl;
 	}
 
 public:
@@ -482,14 +518,14 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			test();
+			//test();
 
-			//cout<<epos<<',';
-			//if (epos%100 == 0)
-			//{
-			//	test_hit();
-			//	cout<<endl;
-			//}
+			cout<<epos<<',';
+			if (epos%100 == 0)
+			{
+				test_hit();
+				cout<<endl;
+			}
 		}
 		test_hit();
 	}
