@@ -20,7 +20,7 @@
 int main(int argc, char* argv[])
 {
 	omp_set_num_threads(8);
-	EmbeddingModel*	Model = new TransA2(50, 0.0025);
+	EmbeddingModel*	Model = new TransGMPE(50, 0.01);
 	Model->run(1000);
 
 	return 0;
