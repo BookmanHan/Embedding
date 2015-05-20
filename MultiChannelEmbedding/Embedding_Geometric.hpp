@@ -68,26 +68,30 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
 	{
-		vec error = embedding_entity[name_entity[triplet.first.first]] 
-			+ embedding_relation[name_relation[triplet.second]] 
-			- embedding_entity[name_entity[triplet.first.second]];
+		vec error = embedding_entity[triplet.first.first]
+			+ embedding_relation[triplet.second]
+			- embedding_entity[triplet.first.second];
 
 		return - sum(abs(error));
 	}
 
-	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
-		vec& head = embedding_entity[name_entity[triplet.first.first]];
-		vec& tail = embedding_entity[name_entity[triplet.first.second]];
-		vec& relation = embedding_relation[name_relation[triplet.second]];
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
 
-		pair<pair<string, string>,string> triplet_f;
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
-		vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
-		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
-		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 1)
+			return 0;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
 
 		head -= alpha * sign(head + relation - tail);
 		tail += alpha * sign(head + relation - tail);
@@ -96,12 +100,12 @@ public:
 		tail_f -= alpha * sign(head_f + relation_f - tail_f);
 		relation_f += alpha * sign(head_f + relation_f - tail_f);
 
-		//head = normalise(head);
-		//tail = normalise(tail);
-		//relation = normalise(relation);
-		//head_f = normalise(head_f);
-		//tail_f = normalise(tail_f);
-		//relation_f = normalise(relation_f);
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
 	}
 };
 
@@ -120,26 +124,30 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
 	{
-		vec error = embedding_entity[name_entity[triplet.first.first]] 
-		+ embedding_relation[name_relation[triplet.second]] 
-		- embedding_entity[name_entity[triplet.first.second]];
+		vec error = embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- embedding_entity[triplet.first.second];
 
-		return - as_scalar(abs(error).t()*mat_r[name_relation[triplet.second]]*abs(error));
+		return - as_scalar(abs(error).t()*mat_r[triplet.second]*abs(error));
 	}
 
-	virtual double train_once( const pair<pair<string, string>,string>& triplet, double factor )
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
-		vec& head = embedding_entity[name_entity[triplet.first.first]];
-		vec& tail = embedding_entity[name_entity[triplet.first.second]];
-		vec& relation = embedding_relation[name_relation[triplet.second]];
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
 
-		pair<pair<string, string>,string> triplet_f;
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
-		vec& head_f = embedding_entity[name_entity[triplet_f.first.first]];
-		vec& tail_f = embedding_entity[name_entity[triplet_f.first.second]];
-		vec& relation_f = embedding_relation[name_relation[triplet_f.second]];
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 1)
+			return 0;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
 
 		head -= alpha * sign(head + relation - tail);
 		tail += alpha * sign(head + relation - tail);
@@ -155,7 +163,7 @@ public:
 		tail_f = normalise(tail_f);
 		relation_f = normalise(relation_f);
 
-		mat_r[name_relation[triplet.second]] -= abs(head + relation - tail) * abs(head + relation - tail).t()
+		mat_r[triplet.second] -= abs(head + relation - tail) * abs(head + relation - tail).t()
 			- abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
 	}
 
@@ -163,6 +171,99 @@ public:
 	{
 		for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 		TransE::train(alpha);
+	}
+};
+
+class TransA2
+	:public TransE
+{
+protected:
+	vector<mat>	mat_r;
+
+public:
+	TransA2(int dim, double alpha)
+		:TransE(dim, alpha)
+	{
+		mat_r.resize(set_relation.size());
+		for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		vec error = embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- embedding_entity[triplet.first.second];
+
+		return - as_scalar(abs(error).t()*mat_r[triplet.second]*abs(error));
+	}
+
+	virtual double probability_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		vec error = embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- embedding_entity[triplet.first.second];
+
+		return - sum(abs(error));
+	}
+
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		if (probability_triplets(triplet) - probability_triplets(triplet_f) > 1)
+			return 0;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		head -= alpha * sign(head + relation - tail);
+		tail += alpha * sign(head + relation - tail);
+		relation -= alpha * sign(head + relation - tail);
+		head_f += alpha * sign(head_f + relation_f - tail_f);
+		tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		relation_f += alpha * sign(head_f + relation_f - tail_f);
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
+	}
+
+	virtual void train( double alpha )
+	{
+		TransE::train(alpha);
+		
+		if (epos%100 ==  0)
+		{
+			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
+			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
+			{
+				auto triplet = *i;
+
+				vec& head = embedding_entity[triplet.first.first];
+				vec& tail = embedding_entity[triplet.first.second];
+				vec& relation = embedding_relation[triplet.second];
+
+				pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+				sample_false_triplet(triplet, triplet_f);
+
+				vec& head_f = embedding_entity[triplet_f.first.first];
+				vec& tail_f = embedding_entity[triplet_f.first.second];
+				vec& relation_f = embedding_relation[triplet_f.second];		
+
+				mat_r[triplet.second] -= abs(head + relation - tail) * abs(head + relation - tail).t()
+					- abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
+			}
+		}
 	}
 };
 
@@ -252,8 +353,42 @@ public:
 	virtual vec grad(const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part) = 0;
 
 public:
+	virtual double pre_train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 1)
+			return 0;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		head -= alpha * sign(head + relation - tail);
+		tail += alpha * sign(head + relation - tail);
+		relation -= alpha * sign(head + relation - tail);
+		head_f += alpha * sign(head_f + relation_f - tail_f);
+		tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		relation_f += alpha * sign(head_f + relation_f - tail_f);
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
+	}
+
 	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
+		if (epos >= 400)
+			return pre_train_once(triplet, factor);
+
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
@@ -265,7 +400,7 @@ public:
 		double total_normalizor = 0;
 		for(auto cnt=0; cnt<sampling_times; ++cnt)
 		{
-			for(unsigned i=0; i<8; ++i)
+			for(auto i=7; i>=0; --i)
 			{
 				bool head = i & 0x001;
 				bool tail = i & 0x100;
@@ -324,7 +459,7 @@ protected:
 	vec			 error;
 
 public:
-	TransGGMP(int dim, double alpha, int sampling_times =2)
+	TransGGMP(int dim, double alpha, int sampling_times =1)
 		:GeneralGeometricEmbeddingModel(dim, alpha), 
 		sampling_times(sampling_times),
 		error(dim, 1)
@@ -369,6 +504,7 @@ public:
 				double prob = exp(probability_triplets(triplet_sample, error));
 				if (_isnan(prob))
 					continue;
+				total_normalizor += prob;
 
 				if (head == false)
 				{

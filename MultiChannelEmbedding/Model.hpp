@@ -32,9 +32,11 @@ protected:
 	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_true;
 	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_false;
 
+	set<int>			pure_tail;
 	set<string>	set_entity;
 	set<string>	set_relation;
 	vector<set<int>>	set_tail;
+	vector<set<int>>	type_set_tail;
 	vector<string>	number_entity;
 	vector<string>	number_relation;
 	vector<double>	prob_head;
@@ -48,6 +50,10 @@ protected:
 	map<string, map<string, vector<string>>>     rel_tails;
 	map<string, vector<string>>			gen_head;
 	map<string, vector<string>>			gen_tail;
+	vector<int> rel_type;
+	map<int, map<int, int>>	tails;
+	map<int, map<int, int>>	heads;
+	ofstream	fout;
 
 protected:
 	const double	alpha;
@@ -55,14 +61,19 @@ protected:
 	double			best_result;
 	double			best_mean;
 	double			best_hitatten;
+	double			best_fmean;
+	double			best_fhitatten;
 
 public:
 	EmbeddingModel(double alpha)
 		:alpha(alpha), best_result(0), best_mean(1e7), best_hitatten(0)
+		,best_fmean(1e7), best_fhitatten(0)
 	{
+		fout.open("D:\\fout.txt");
+
 		epos = 0;
-		load_training("D:\\Data\\Wordnet-18\\train.txt");
-		load_training("D:\\Data\\Wordnet-18\\dev.txt");
+		load_training("D:\\Data\\Freebase-15K\\train.txt");
+		load_training("D:\\Data\\Freebase-15K\\dev.txt");
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -100,10 +111,10 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
+		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -112,10 +123,18 @@ public:
 		prob_tail.resize(set_entity.size());
 		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
 		{
+			pure_tail.insert(i->first.second);
 			set_tail[i->second].insert(i->first.second);
 
 			++ prob_head[i->first.first];
 			++ prob_tail[i->first.second];
+
+			++ tails[i->second][i->first.first];
+			++ heads[i->second][i->first.second];
+		}
+		for(auto i=i_data_dev_true.begin(); i!=i_data_dev_true.end(); ++i)
+		{
+			set_tail[i->second].insert(i->first.second);
 		}
 
 		for(auto & elem : prob_head)
@@ -127,6 +146,54 @@ public:
 		{
 			elem /= i_data_train.size();
 		}
+
+		rel_type.resize(set_relation.size(), 1);
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			for(auto j=tails[i].begin(); j!=tails[i].end(); ++j)
+			{
+				if (j->second > 1)
+				{
+					rel_type[i] = 2;
+					break;;
+				}
+			}
+		}
+
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			for(auto j=heads[i].begin(); j!=heads[i].end(); ++j)
+			{
+				if (j->second > 1)
+					if (rel_type[i] == 2)
+					{
+						rel_type[i] = 4;
+						break;
+					}
+					else
+					{
+						rel_type[i] = 3;
+						break;;
+					}
+			}
+		}
+
+		type_set_tail.resize(5);
+		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
+		{
+			type_set_tail[rel_type[i->second]].insert(i->first.second);
+		}
+
+		unsigned count = 0;
+		cout<<pure_tail.size()<<endl;
+		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
+		{
+			if (pure_tail.find(i->first.second) == pure_tail.end())
+			{
+				++count;
+			}
+		}
+		cout<<count<<endl;
 	}
 
 	void load_training(const string& filename)
@@ -365,43 +432,83 @@ public:
 	{
 		double mean = 0;
 		double hits = 0;
-		double total = 0;
+		double fmean = 0;
+		double fhits = 0;
+		double total = i_data_test_true.size();
+
+		double arr_mean[5] = {0};
+		double arr_total[5] = {0};
+
+		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
+		{
+			++ arr_total[rel_type[i->second]];
+		}
 
 #pragma omp parallel for
 		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 		{
-			++ total;
-
 			auto t = *i;
-			unsigned rmean = 0;
+			int frmean = 0;
+			int rmean = 0;
 			double score_i = prob_triplets(*i);
-			for(auto j=set_tail[t.second].begin(); j!=set_tail[t.second].end(); ++j)
+
+			for(auto j=pure_tail.begin(); j!=pure_tail.end(); ++j)
 			{
 				t.first.second = *j;
-				//if (i_check_data_train.find(t) != i_check_data_train.end())
-				//	continue;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
+
+				if (i_check_data_train.find(t) != i_check_data_train.end())
+					continue;
+
+				if (score_i < prob_triplets(t))
+					++ frmean;
 			}
 
 #pragma omp critical
 			{
+				if (frmean<=11)
+					++ arr_mean[rel_type[i->second]];
+				
 				mean += rmean;
-				if (rmean <= 10)
+				fmean += frmean;
+				if (rmean <= 11)
 					++ hits;
+				if (frmean<=11)
+					++ fhits;
 			}
 		}
 
 		cout<<endl;
+		for(auto i=1; i<=4; ++i)
+		{
+			cout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
+		}
+
 		cout<<"MEANS = "<<mean/total<<endl;
 		cout<<"HITS = "<<hits/total<<endl;
+		fout<<"MEANS = "<<mean/total<<endl;
+		fout<<"HITS = "<<hits/total<<endl;
+		
+		cout<<"FMEANS = "<<fmean/total<<endl;
+		cout<<"FHITS = "<<fhits/total<<endl;
+		fout<<"FMEANS = "<<fmean/total<<endl;
+		fout<<"FHITS = "<<fhits/total<<endl;
 
 		best_mean = min(best_mean, mean/total);
 		best_hitatten = max(best_hitatten, hits/total);
+		best_fmean = min(best_fmean, fmean/total);
+		best_fhitatten = max(best_fhitatten, fhits/total);
 
 		cout<<"BestMEANS = "<<best_mean<<endl;
 		cout<<"BestHITS = "<<best_hitatten<<endl;
+		fout<<"BestMEANS = "<<best_mean<<endl;
+		fout<<"BestHITS = "<<best_hitatten<<endl;
+		cout<<"fBestMEANS = "<<best_fmean<<endl;
+		cout<<"fBestHITS = "<<best_fhitatten<<endl;
+		fout<<"fBestMEANS = "<<best_fmean<<endl;
+		fout<<"fBestHITS = "<<best_fhitatten<<endl;
 	}
 
 public:
@@ -514,18 +621,18 @@ public:
 	{
 		best_result = 0;
 		epos = 0;
-		while(--max_epos)
+		while(max_epos--)
 		{
 			++ epos;
 			train(alpha);
 			//test();
 
 			cout<<epos<<',';
-			if (epos%100 == 0)
-			{
-				test_hit();
-				cout<<endl;
-			}
+			//if (epos%100 == 0)
+			//{
+			//	test_hit();
+			//	cout<<endl;
+			//}
 		}
 		test_hit();
 	}
