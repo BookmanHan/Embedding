@@ -216,7 +216,7 @@ public:
 		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
 
-		if (probability_triplets(triplet) - probability_triplets(triplet_f) > 1)
+		if (probability_triplets(triplet) - probability_triplets(triplet_f) > 2)
 			return 0;
 
 		vec& head_f = embedding_entity[triplet_f.first.first];
@@ -242,7 +242,7 @@ public:
 	{
 		TransE::train(alpha);
 		
-		if (epos%100 ==  0)
+		if (best_result >= 0.8)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
@@ -263,7 +263,7 @@ public:
 				mat_r[triplet.second] -= abs(head + relation - tail) * abs(head + relation - tail).t()
 					- abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
 			}
-			//for_each(mat_r.begin(), mat_r.end(), [=](mat& elem){elem = normalise(elem);});
+			for_each(mat_r.begin(), mat_r.end(), [=](mat& elem){elem = normalise(elem);});
 		}
 	}
 };
@@ -335,7 +335,7 @@ protected:
 	vec			 error;
 
 public:
-	TransGMP(int dim, double alpha, int sampling_times =2)
+	TransGMP(int dim, double alpha, int sampling_times =1)
 		:GeometricEmbeddingModel(dim, alpha), 
 		sampling_times(sampling_times),
 		error(dim, 1)
@@ -363,7 +363,7 @@ public:
 		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
 
-		if (probability_triplets(triplet) -  probability_triplets(triplet_f) > 1)
+		if (probability_triplets(triplet) -  probability_triplets(triplet_f) > 2)
 			return 0;
 
 		vec& head_f = embedding_entity[triplet_f.first.first];
@@ -387,8 +387,8 @@ public:
 
 	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
-		if (epos <= 900)
-			return pre_train_once(triplet, factor);
+		//if (epos <= 500)
+		//	return pre_train_once(triplet, factor);
 
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
@@ -449,6 +449,15 @@ public:
 		head = normalise(head);
 		tail = normalise(tail);
 		relation = normalise(relation);
+
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		if (probability_triplets(triplet) -  probability_triplets(triplet_f) > 2)
+			return 0;
+
+		if (factor > 0)
+			train_once(triplet_f, -factor);
 	}
 };
 
@@ -734,7 +743,7 @@ public:
 	{
 		GeometricEmbeddingModel::train(alpha);
 
-		if (epos%500 == 0)
+		if (best_result >= 0.80)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){m=eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)

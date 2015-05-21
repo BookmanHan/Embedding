@@ -72,8 +72,7 @@ public:
 		fout.open("D:\\fout.txt");
 
 		epos = 0;
-		load_training("D:\\Data\\Wordnet-18\\train.txt");
-		load_training("D:\\Data\\Wordnet-18\\dev.txt");
+		load_training("D:\\Data\\Freebase\\train.txt");
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -111,10 +110,10 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
+		load_testing("D:\\Data\\Freebase\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("D:\\Data\\Freebase\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("D:\\Data\\Freebase\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("D:\\Data\\Freebase\\test.txt", i_data_test_true, i_data_test_false, false);
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -454,7 +453,7 @@ public:
 
 			for(auto j=pure_tail.begin(); j!=pure_tail.end(); ++j)
 			{
-				t.first.first = *j;
+				t.first.second = *j;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
@@ -468,14 +467,14 @@ public:
 
 #pragma omp critical
 			{
-				if (frmean<=12)
+				if (frmean<=11)
 					++ arr_mean[rel_type[i->second]];
 				
 				mean += rmean;
 				fmean += frmean;
-				if (rmean <= 12)
+				if (rmean <= 11)
 					++ hits;
-				if (frmean<=12)
+				if (frmean<=11)
 					++ fhits;
 			}
 		}
@@ -625,9 +624,9 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			//test();
+			test();
 
-			cout<<epos<<',';
+			//cout<<epos<<',';
 
 			//if (epos%100 == 0)
 			//{

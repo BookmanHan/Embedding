@@ -2,6 +2,8 @@
 #include "Embedding_MultiChannel.hpp"
 #include "Embedding_Geometric.hpp"
 #include <omp.h>
+#include <cstdlib>
+#include <windows.h>
 
 // 放回采样
 // GeometricEmbeddingHadamard(100, 0.02) = 55.5%
@@ -19,9 +21,9 @@
 // TransGMPE(50, 0.005) @ FB15K = 274, 26.2%;
 int main(int argc, char* argv[])
 {
-	omp_set_num_threads(8);
-	EmbeddingModel*	Model = new TransGMPE(50, 0.01);
-	Model->run(1000);
+	omp_set_num_threads(6);
+	EmbeddingModel*	Model = new TransGMPA(100, 0.001);
+	Model->run(5000);
 
 	return 0;
 }
