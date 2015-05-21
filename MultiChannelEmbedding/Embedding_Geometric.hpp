@@ -743,7 +743,7 @@ public:
 	{
 		GeometricEmbeddingModel::train(alpha);
 
-		if (best_result >= 0.80)
+		if (best_result >= 0.79)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){m=eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
