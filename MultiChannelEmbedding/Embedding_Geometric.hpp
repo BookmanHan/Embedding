@@ -242,7 +242,7 @@ public:
 	{
 		TransE::train(alpha);
 		
-		if (best_result >= 0.8)
+		if (best_result>0.8)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
@@ -387,8 +387,8 @@ public:
 
 	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
-		//if (epos <= 500)
-		//	return pre_train_once(triplet, factor);
+		if (epos <= 500)
+			return pre_train_once(triplet, factor);
 
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
@@ -554,6 +554,169 @@ public:
 		//head = normalise(head);
 		//tail = normalise(tail);
 		//relation = normalise(relation);
+	}
+};
+
+
+class TransGH
+	:public GeometricEmbeddingModel
+{
+protected:
+	unsigned int sampling_times;
+	vec			 error;
+	vector<vec>	 hyper;
+
+public:
+	TransGH(int dim, double alpha, int sampling_times =1)
+		:GeometricEmbeddingModel(dim, alpha), 
+		sampling_times(sampling_times),
+		error(dim, 1)
+	{
+		hyper.resize(set_relation.size());
+		for_each(hyper.begin(), hyper.end(), [=](vec& elem){elem = randu(dim, 1);});
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		vec error = embedding_entity[triplet.first.first] 
+			- as_scalar(hyper[triplet.second].t()* embedding_entity[triplet.first.first]) * hyper[triplet.second]
+			+ embedding_relation[triplet.second]
+			+ embedding_entity[triplet.first.second] 
+			- as_scalar(hyper[triplet.second].t()* embedding_entity[triplet.first.second])
+				* hyper[triplet.second];
+
+		return - sum(abs(error));
+	}
+
+	virtual double probability_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet)
+	{
+		return prob_triplets(triplet);
+	}
+
+	virtual double pre_train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		if (probability_triplets(triplet) -  probability_triplets(triplet_f) > 1)
+			return 0;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		head -= alpha * sign(head + relation - tail);
+		tail += alpha * sign(head + relation - tail);
+		relation -= alpha * sign(head + relation - tail);
+		head_f += alpha * sign(head_f + relation_f - tail_f);
+		tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		relation_f += alpha * sign(head_f + relation_f - tail_f);
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+		relation_f = normalise(relation_f);
+	}
+
+public:
+	virtual vec grad(const pair<pair<unsigned, unsigned>,unsigned>& triplet, componet part)
+	{
+		vec error = embedding_entity[triplet.first.first] 
+		- as_scalar(hyper[triplet.second].t()* embedding_entity[triplet.first.first]) * hyper[triplet.second]
+		+ embedding_relation[triplet.second]
+		+ embedding_entity[triplet.first.second] 
+		- as_scalar(hyper[triplet.second].t()* embedding_entity[triplet.first.second])
+			* hyper[triplet.second];
+
+		switch(part)
+		{
+		case GeometricEmbeddingModel::componet_head:
+			return (eye(dim,dim) - hyper[triplet.second] * hyper[triplet.second].t()) * sign(error);
+			break;
+		case GeometricEmbeddingModel::componet_tail:
+			return - (eye(dim,dim) - hyper[triplet.second] * hyper[triplet.second].t()) * sign(error);
+			break;
+		case GeometricEmbeddingModel::componet_relation:
+			return sign(error);
+			break;
+		}
+	}
+
+public:
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& hyper = embedding_relation[triplet.second];
+
+		vec head_grad(dim, 1, fill::zeros);
+		vec tail_grad(dim, 1, fill::zeros);
+		vec relation_grad(dim, 1, fill::zeros);
+		vec hyper_grad(dim, 1, fill::zeros);
+
+		double total_normalizor = 0;
+		for(auto cnt=0; cnt<sampling_times; ++cnt)
+		{
+			for(unsigned i=0; i<8; ++i)
+			{
+				bool head = i & 0x001;
+				bool tail = i & 0x100;
+				bool relation = i & 0x010;
+
+				pair<pair<unsigned, unsigned>,unsigned> triplet_sample;
+				sample_triplet(triplet, triplet_sample, head, relation, tail);
+
+				double prob = exp(probability_triplets(triplet_sample));
+				if (_isnan(prob))
+					continue;
+				total_normalizor += prob;
+
+				if (head == false)
+				{
+					head_grad -= prob * grad(triplet_sample, componet::componet_head);
+				}
+				if (tail == false)
+				{
+					tail_grad -= prob * grad(triplet_sample, componet::componet_tail);
+				}
+				if (relation == false)
+				{
+					relation_grad -= prob * grad(triplet_sample, componet::componet_relation);
+					hyper_grad -= prob * grad(triplet_sample, componet::componet_hyper);
+				}
+			}
+		}
+
+		if (total_normalizor != 0)
+		{
+			head_grad /= total_normalizor;
+			tail_grad /= total_normalizor;
+			relation_grad /= total_normalizor;
+			hyper_grad /= total_normalizor;
+		}
+
+		head_grad += grad(triplet, GeometricEmbeddingModel::componet_head);
+		tail_grad += grad(triplet, GeometricEmbeddingModel::componet_tail);
+		relation_grad += grad(triplet, GeometricEmbeddingModel::componet_relation);
+		hyper_grad += grad(triplet, GeometricEmbeddingModel::componet_hyper);
+
+		head -= factor * head_grad;
+		tail -= factor * tail_grad;
+		relation -= factor * relation_grad;
+		hyper -= factor * hyper_grad;
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		hyper = normalise(hyper);
 	}
 };
 
@@ -743,7 +906,7 @@ public:
 	{
 		GeometricEmbeddingModel::train(alpha);
 
-		if (best_result >= 0.79)
+		if (best_result >= 0.82)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){m=eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
@@ -1190,8 +1353,6 @@ public:
 			* embedding_entity[name_entity[triplet.first.second]]))
 				* (embedding_entity[name_entity[triplet.first.first]]
 			- embedding_entity[name_entity[triplet.first.second]]).t();
-
-
 	}
 
 	virtual double prob_triplets( const pair<pair<string, string>,string>& triplet )

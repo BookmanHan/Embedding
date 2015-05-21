@@ -72,7 +72,8 @@ public:
 		fout.open("D:\\fout.txt");
 
 		epos = 0;
-		load_training("D:\\Data\\Freebase\\train.txt");
+		load_training("D:\\Data\\Wordnet\\train.txt");
+		load_training("D:\\Data\\Wordnet\\dev.txt");
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -110,10 +111,10 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Freebase\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("D:\\Data\\Freebase\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("D:\\Data\\Freebase\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("D:\\Data\\Freebase\\test.txt", i_data_test_true, i_data_test_false, false);
+		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("D:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("D:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -443,9 +444,14 @@ public:
 			++ arr_total[rel_type[i->second]];
 		}
 
+		unsigned cnt = 0;
 #pragma omp parallel for
 		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 		{
+			++cnt;
+			if (cnt%100 == 0)
+				cout<<cnt<<',';
+
 			auto t = *i;
 			int frmean = 0;
 			int rmean = 0;
@@ -627,14 +633,8 @@ public:
 			test();
 
 			//cout<<epos<<',';
-
-			//if (epos%100 == 0)
-			//{
-			//	test_hit();
-			//	cout<<endl;
-			//}
 		}
-		test_hit();
+		//test_hit();
 	}
 };
 
@@ -670,7 +670,7 @@ protected:
 	const unsigned	dim;
 
 protected:
-	enum componet	{componet_head, componet_tail, componet_relation, componet_matr, componet_mata};
+	enum componet	{componet_hyper, componet_head, componet_tail, componet_relation, componet_matr, componet_mata};
 
 public:
 	GeometricEmbeddingModel(int dim, double alpha)
