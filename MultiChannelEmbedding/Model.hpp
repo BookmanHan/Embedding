@@ -462,7 +462,7 @@ public:
 
 			for(auto j=pure_head.begin(); j!=pure_head.end(); ++j)
 			{
-				t.first.second = *j;
+				t.first.first = *j;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;

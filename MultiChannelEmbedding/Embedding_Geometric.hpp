@@ -262,7 +262,7 @@ public:
 		++ cnt;
 		TransE::train(alpha);
 		
-		if (epos == 3000)
+		if (epos == 4000)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
