@@ -86,7 +86,7 @@ public:
 		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
 
-		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 1)
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 2)
 			return 0;
 
 		vec& head_f = embedding_entity[triplet_f.first.first];
@@ -179,6 +179,7 @@ class TransA2
 {
 protected:
 	vector<mat>	mat_r;
+	unsigned cnt;
 
 public:
 	TransA2(int dim, double alpha)
@@ -207,6 +208,21 @@ public:
 		return - sum(abs(error));
 	}
 
+	void relation_reg(double factor)
+	{
+		for(auto i=0; i<set_relation.size(); ++i)
+		{
+			for(auto j=0; j<set_relation.size(); ++j)
+			{
+				if (i == j)
+					continue;
+
+				embedding_relation[i] -= factor * sign(as_scalar(embedding_relation[i].t()*embedding_relation[j]));
+				embedding_relation[j] -= factor * sign(as_scalar(embedding_relation[i].t()*embedding_relation[j]));
+			}
+		}
+	}
+
 	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
 	{
 		vec& head = embedding_entity[triplet.first.first];
@@ -216,7 +232,7 @@ public:
 		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
 
-		if (probability_triplets(triplet) - probability_triplets(triplet_f) > 2)
+		if (probability_triplets(triplet) - probability_triplets(triplet_f) > 1)
 			return 0;
 
 		vec& head_f = embedding_entity[triplet_f.first.first];
@@ -236,13 +252,17 @@ public:
 		head_f = normalise(head_f);
 		tail_f = normalise(tail_f);
 		relation_f = normalise(relation_f);
+
+		//if (cnt%1000 == 0)
+		//	relation_reg(factor);
 	}
 
 	virtual void train( double alpha )
 	{
+		++ cnt;
 		TransE::train(alpha);
 		
-		if (best_result>0.8)
+		if (epos == 3000)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)

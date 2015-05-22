@@ -33,6 +33,7 @@ protected:
 	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_false;
 
 	set<int>			pure_tail;
+	set<int>			pure_head;
 	set<string>	set_entity;
 	set<string>	set_relation;
 	vector<set<int>>	set_tail;
@@ -72,8 +73,8 @@ public:
 		fout.open("D:\\fout.txt");
 
 		epos = 0;
-		load_training("D:\\Data\\Wordnet\\train.txt");
-		load_training("D:\\Data\\Wordnet\\dev.txt");
+		load_training("D:\\Data\\Freebase-15K\\train.txt");
+		load_training("D:\\Data\\Freebase-15K\\dev.txt");
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -111,10 +112,10 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("D:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("D:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
+		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -124,6 +125,8 @@ public:
 		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
 		{
 			pure_tail.insert(i->first.second);
+			pure_head.insert(i->first.first);
+
 			set_tail[i->second].insert(i->first.second);
 
 			++ prob_head[i->first.first];
@@ -185,10 +188,10 @@ public:
 		}
 
 		unsigned count = 0;
-		cout<<pure_tail.size()<<endl;
+		cout<<pure_head.size()<<endl;
 		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 		{
-			if (pure_tail.find(i->first.second) == pure_tail.end())
+			if (pure_head.find(i->first.first) == pure_tail.end())
 			{
 				++count;
 			}
@@ -457,7 +460,7 @@ public:
 			int rmean = 0;
 			double score_i = prob_triplets(*i);
 
-			for(auto j=pure_tail.begin(); j!=pure_tail.end(); ++j)
+			for(auto j=pure_head.begin(); j!=pure_head.end(); ++j)
 			{
 				t.first.second = *j;
 
@@ -630,11 +633,11 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			test();
+			//test();
 
-			//cout<<epos<<',';
+			cout<<epos<<',';
 		}
-		//test_hit();
+		test_hit();
 	}
 };
 

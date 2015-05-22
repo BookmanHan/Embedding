@@ -21,9 +21,9 @@
 // TransGMPE(50, 0.005) @ FB15K = 274, 26.2%;
 int main(int argc, char* argv[])
 {
-	omp_set_num_threads(8);
-	EmbeddingModel*	Model = new TransA2(50, 0.01);
-	Model->run(1000);
+	omp_set_num_threads(6);
+	EmbeddingModel*	Model = new TransA2(50, 0.003);
+	Model->run(3000);
 
 	return 0;
 }
