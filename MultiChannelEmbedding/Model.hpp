@@ -73,8 +73,8 @@ public:
 		fout.open("D:\\fout.txt");
 
 		epos = 0;
-		load_training("D:\\Data\\Freebase-15K\\train.txt");
-		load_training("D:\\Data\\Freebase-15K\\dev.txt");
+		load_training("D:\\Data\\Wordnet-18\\train.txt");
+		load_training("D:\\Data\\Wordnet-18\\dev.txt");
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -112,10 +112,10 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
+		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("D:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("D:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -460,9 +460,9 @@ public:
 			int rmean = 0;
 			double score_i = prob_triplets(*i);
 
-			for(auto j=pure_head.begin(); j!=pure_head.end(); ++j)
+			for(auto j=0; j!=set_entity.size(); ++j)
 			{
-				t.first.first = *j;
+				t.first.second = j;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
@@ -476,14 +476,14 @@ public:
 
 #pragma omp critical
 			{
-				if (frmean<=11)
+				if (frmean<10)
 					++ arr_mean[rel_type[i->second]];
 				
 				mean += rmean;
 				fmean += frmean;
-				if (rmean <= 11)
+				if (rmean < 10)
 					++ hits;
-				if (frmean<=11)
+				if (frmean< 10)
 					++ fhits;
 			}
 		}
@@ -638,6 +638,7 @@ public:
 			cout<<epos<<',';
 		}
 		test_hit();
+		//test();
 	}
 };
 
