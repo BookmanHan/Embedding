@@ -142,7 +142,7 @@ public:
 		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
 		sample_false_triplet(triplet, triplet_f);
 
-		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 1)
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > 2)
 			return 0;
 
 		vec& head_f = embedding_entity[triplet_f.first.first];
@@ -262,7 +262,7 @@ public:
 		++ cnt;
 		TransE::train(alpha);
 		
-		if (epos == 5000)
+		if (epos == 3000)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 			for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
