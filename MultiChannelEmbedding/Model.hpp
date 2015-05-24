@@ -73,8 +73,8 @@ public:
 		fout.open("D:\\fout.txt");
 
 		epos = 0;
-		load_training("D:\\Data\\Wordnet-18\\train.txt");
-		load_training("D:\\Data\\Wordnet-18\\dev.txt");
+
+		load_training("D:\\Data\\Freebase-15K\\train.txt");
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -112,10 +112,10 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
-		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
+		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -150,36 +150,36 @@ public:
 			elem /= i_data_train.size();
 		}
 
-		rel_type.resize(set_relation.size(), 1);
+		rel_type.resize(set_relation.size());
 		for(auto i=0; i<set_relation.size(); ++i)
 		{
-			for(auto j=tails[i].begin(); j!=tails[i].end(); ++j)
+			if (relation_tph[i]<1.5 && relation_hpt[i]<1.5)
 			{
-				if (j->second > 1)
-				{
-					rel_type[i] = 2;
-					break;;
-				}
+				rel_type[i] = 1;
+			}
+			else if (relation_hpt[i] <1.5 && relation_tph[i] >= 1.5)
+			{
+				rel_type[i] = 2;
+			}
+			else if (relation_hpt[i] >=1.5 && relation_tph[i] < 1.5)
+			{
+				rel_type[i] = 3;
+			}
+			else
+			{
+				rel_type[i] = 4;
 			}
 		}
 
+		double a[5] = {0};
 		for(auto i=0; i<set_relation.size(); ++i)
 		{
-			for(auto j=heads[i].begin(); j!=heads[i].end(); ++j)
-			{
-				if (j->second > 1)
-					if (rel_type[i] == 2)
-					{
-						rel_type[i] = 4;
-						break;
-					}
-					else
-					{
-						rel_type[i] = 3;
-						break;;
-					}
-			}
+			++a[rel_type[i]];
 		}
+		cout<<a[1]/set_relation.size()<<endl;
+		cout<<a[2]/set_relation.size()<<endl;
+		cout<<a[3]/set_relation.size()<<endl;
+		cout<<a[4]/set_relation.size()<<endl;
 
 		type_set_tail.resize(5);
 		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
@@ -447,6 +447,11 @@ public:
 			++ arr_total[rel_type[i->second]];
 		}
 
+		for(auto i=1; i<5; ++i)
+		{
+			cout<<arr_total[i]/total<<endl;
+		}
+
 		unsigned cnt = 0;
 #pragma omp parallel for
 		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
@@ -548,8 +553,7 @@ public:
 		pair<pair<unsigned,unsigned>,unsigned>& triplet)
 	{
 
-		double prob = relation_hpt[origin.second]
-		/(relation_hpt[origin.second] + relation_tph[origin.second]);
+		double prob = relation_hpt[origin.second]/(relation_hpt[origin.second] + relation_tph[origin.second]);
 
 		triplet = origin;
 		while(true)
