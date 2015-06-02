@@ -370,14 +370,15 @@ protected:
 	vector<vector<vec>>		embedding_clusters;
 	vector<vector<mat>>		embedding_metric;
 	vector<vec>						weights_clusters;
-	double									garma;
-	double									lambda;
-	unsigned								time_limits;
+	double							garma;
+	double							lambda;
+	unsigned						time_limits;
+	double							sparse_factor;
 
 public:
-	TransG(int dim, int cluster,  double garma, double alpha)
+	TransG(int dim, int cluster,  double garma, double alpha, double sparse_factor)
 		:GeometricEmbeddingModel(dim, alpha), n_cluster(cluster), 
-		garma(garma)
+		garma(garma), sparse_factor(sparse_factor)
 	 {
 		embedding_clusters.resize(set_relation.size());
 		for(auto &elem_vec : embedding_clusters)
@@ -449,6 +450,9 @@ public:
 			alpha /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
 		weights_clusters[triplet_f.second][cluster] -= 
 			alpha /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
+
+		weights_clusters[triplet.second][cluster] -= 
+			alpha * sign(weights_clusters[triplet.second][cluster]);
 
 		head -= alpha * sign(head + relation - tail) 
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);

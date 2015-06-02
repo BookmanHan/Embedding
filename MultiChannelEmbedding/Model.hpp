@@ -444,7 +444,7 @@ public:
 					++ real_hit, ++ lreal_hit;
 			}
 
-			//cout<<number_relation[r]<<":"<<lreal_hit/lreal_total<<endl;
+			cout<<number_relation[r]<<":"<<lreal_hit/lreal_total<<endl;
 		}
 
 		cout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size());
