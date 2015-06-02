@@ -74,7 +74,15 @@ public:
 
 		epos = 0;
 
+#ifdef Freebase
 		load_training("D:\\Data\\Freebase-15K\\train.txt");
+#elif defined FreebaseTC
+		load_training("D:\\Data\\Freebase\\train.txt");
+#elif defined WordnetTC
+		load_training("D:\\Data\\Wordnet\\train.txt");
+#else
+		load_training("D:\\Data\\Wordnet-18\\train.txt");
+#endif
 
 		relation_hpt.resize(set_relation.size());
 		relation_tph.resize(set_relation.size());
@@ -112,10 +120,28 @@ public:
 			number_relation[i->second] = i->first;
 		}
 
+#ifdef Freebase
 		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
 		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
 		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
 		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
+#elif defined FreebaseTC
+		load_testing("D:\\Data\\Freebase\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("D:\\Data\\Freebase\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("D:\\Data\\Freebase\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("D:\\Data\\Freebase\\test.txt", i_data_test_true, i_data_test_false, false);
+#elif defined WordnetTC
+		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("D:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("D:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
+#else
+		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("D:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("D:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
+
+#endif
 
 		cout<<"Entities = "<<set_entity.size()<<endl;
 
@@ -396,13 +422,16 @@ public:
 				}
 			}
 
+			double lreal_hit = 0;
+			double lreal_total = 0;
 			for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 			{
 				if (i->second != r)
 					continue;
 
+				++ lreal_total;
 				if (prob_triplets(*i) > threshold)
-					++ real_hit;
+					++ real_hit, ++lreal_hit;
 			}
 
 			for(auto i=i_data_test_false.begin(); i!=i_data_test_false.end(); ++i)
@@ -410,9 +439,12 @@ public:
 				if (i->second != r)
 					continue;
 
+				++ lreal_total;
 				if (prob_triplets(*i) <= threshold)
-					++ real_hit;
+					++ real_hit, ++ lreal_hit;
 			}
+
+			//cout<<number_relation[r]<<":"<<lreal_hit/lreal_total<<endl;
 		}
 
 		cout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size());
@@ -431,7 +463,7 @@ public:
 		}
 	}
 
-	void test_hit()
+	void test_hit(bool ch=true)
 	{
 		double mean = 0;
 		double hits = 0;
@@ -439,7 +471,7 @@ public:
 		double fhits = 0;
 		double total = i_data_test_true.size();
 
-		double arr_mean[5] = {0};
+		double arr_mean[20] = {0};
 		double arr_total[5] = {0};
 
 		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
@@ -447,18 +479,16 @@ public:
 			++ arr_total[rel_type[i->second]];
 		}
 
-		for(auto i=1; i<5; ++i)
-		{
-			cout<<arr_total[i]/total<<endl;
-		}
-
 		unsigned cnt = 0;
+
 #pragma omp parallel for
 		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
 		{
 			++cnt;
 			if (cnt%100 == 0)
+			{
 				cout<<cnt<<',';
+			}
 
 			auto t = *i;
 			int frmean = 0;
@@ -467,7 +497,11 @@ public:
 
 			for(auto j=0; j!=set_entity.size(); ++j)
 			{
+#ifdef Head
+				t.first.first = j;
+#else
 				t.first.second = j;
+#endif
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
@@ -498,7 +532,7 @@ public:
 		{
 			cout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
 		}
-
+		
 		cout<<"MEANS = "<<mean/total<<endl;
 		cout<<"HITS = "<<hits/total<<endl;
 		fout<<"MEANS = "<<mean/total<<endl;
@@ -637,11 +671,20 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			//test();
-
+			
 			cout<<epos<<',';
+#ifndef  LP
+			test();
+#endif 
 		}
+		
+		cout<<endl;
+#ifdef LP
 		test_hit();
+#else
+		test();
+#endif
+
 		//test();
 	}
 };
