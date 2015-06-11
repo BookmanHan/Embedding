@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <arma>
 #include <map>
 #include <set>
@@ -10,10 +11,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cctype>
+#include <iomanip>
 #include <boost/progress.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace arma;
+using namespace boost;
 
 class EmbeddingModel
 {
@@ -54,6 +58,8 @@ protected:
 	vector<int> rel_type;
 	map<int, map<int, int>>	tails;
 	map<int, map<int, int>>	heads;
+
+public:
 	ofstream	fout;
 
 protected:
@@ -70,7 +76,18 @@ public:
 		:alpha(alpha), best_result(0), best_mean(1e7), best_hitatten(0)
 		,best_fmean(1e7), best_fhitatten(0)
 	{
-		fout.open("D:\\fout.txt");
+		const time_t log_time = time(nullptr);
+		struct tm* current_time = localtime(&log_time);
+		stringstream ss;
+		ss<<1900 + current_time->tm_year<<"-";
+		ss<<setfill('0')<<setw(2)<<current_time->tm_mon + 1<<"-";
+		ss<<setfill('0')<<setw(2)<<current_time->tm_mday<<" ";
+		ss<<setfill('0')<<setw(2)<<current_time->tm_hour<<".";
+		ss<<setfill('0')<<setw(2)<<current_time->tm_min<<".";
+		ss<<setfill('0')<<setw(2)<<current_time->tm_sec;
+		
+		fout.open((string("E:\\สตั้\\Report\\Experiment.Embedding\\")
+			+ ss.str() + ".log").c_str());
 
 		epos = 0;
 
@@ -451,6 +468,9 @@ public:
 		best_result = max(best_result, real_hit/(data_test_true.size() + data_test_false.size()));
 		cout<<", Best = "<<best_result<<endl;
 
+		fout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size());
+		fout<<", Best = "<<best_result<<endl;
+
 		return real_hit/(data_test_true.size() + data_test_false.size());
 	}
 
@@ -528,34 +548,27 @@ public:
 		}
 
 		cout<<endl;
+		fout<<endl;
 		for(auto i=1; i<=4; ++i)
 		{
 			cout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
+			fout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
 		}
-		
-		cout<<"MEANS = "<<mean/total<<endl;
-		cout<<"HITS = "<<hits/total<<endl;
-		fout<<"MEANS = "<<mean/total<<endl;
-		fout<<"HITS = "<<hits/total<<endl;
-		
-		cout<<"FMEANS = "<<fmean/total<<endl;
-		cout<<"FHITS = "<<fhits/total<<endl;
-		fout<<"FMEANS = "<<fmean/total<<endl;
-		fout<<"FHITS = "<<fhits/total<<endl;
+		fout<<endl;
 
 		best_mean = min(best_mean, mean/total);
 		best_hitatten = max(best_hitatten, hits/total);
 		best_fmean = min(best_fmean, fmean/total);
 		best_fhitatten = max(best_fhitatten, fhits/total);
 
-		cout<<"BestMEANS = "<<best_mean<<endl;
-		cout<<"BestHITS = "<<best_hitatten<<endl;
-		fout<<"BestMEANS = "<<best_mean<<endl;
-		fout<<"BestHITS = "<<best_hitatten<<endl;
-		cout<<"fBestMEANS = "<<best_fmean<<endl;
-		cout<<"fBestHITS = "<<best_fhitatten<<endl;
-		fout<<"fBestMEANS = "<<best_fmean<<endl;
-		fout<<"fBestHITS = "<<best_fhitatten<<endl;
+		cout<<"Raw.BestMEANS = "<<best_mean<<endl;
+		cout<<"Raw.BestHITS = "<<best_hitatten<<endl;
+		fout<<"Raw.BestMEANS = "<<best_mean<<endl;
+		fout<<"Raw.BestHITS = "<<best_hitatten<<endl;
+		cout<<"Filter.BestMEANS = "<<best_fmean<<endl;
+		cout<<"Filter.BestHITS = "<<best_fhitatten<<endl;
+		fout<<"Filter.BestMEANS = "<<best_fmean<<endl;
+		fout<<"Filter.BestHITS = "<<best_fhitatten<<endl;
 	}
 
 public:
@@ -663,7 +676,7 @@ public:
 	}
 
 public:
-	virtual void run(int max_epos = 500)
+	virtual void run(int max_epos = 500, bool round_turning = false)
 	{
 		best_result = 0;
 		epos = 0;
@@ -671,11 +684,15 @@ public:
 		{
 			++ epos;
 			train(alpha);
-			
-			cout<<epos<<',';
+
 #ifndef  LP
-			test();
-#endif 
+			if (round_turning)
+				test();
+#else
+			cout<<epos<<',';
+			if (round_turning && epos%2000 == 0)
+				test_hit();
+#endif
 		}
 		
 		cout<<endl;
@@ -684,8 +701,16 @@ public:
 #else
 		test();
 #endif
+	}
 
-		//test();
+	void log(const string& words)
+	{
+		fout<<words<<endl;
+	}
+
+	virtual ~EmbeddingModel()
+	{
+		fout.close();
 	}
 };
 

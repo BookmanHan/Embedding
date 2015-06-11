@@ -12,6 +12,17 @@ inline double sign(const double& x)
 		return x>0?+1:-1;
 }
 
+double norm_common(const mat& m)
+{
+	double re = 0;
+	for(auto i=m.begin(); i!=m.end(); ++i)
+	{
+		re += (*i) * (*i);
+	}
+
+	return sqrt(re);
+}
+
 class GeometricEmbeddingHadamard
 	:public GeometricEmbeddingModel
 {
@@ -374,11 +385,12 @@ protected:
 	double							lambda;
 	unsigned						time_limits;
 	double							sparse_factor;
+	const	bool					single_or_total;
 
 public:
-	TransG(int dim, int cluster,  double garma, double alpha, double sparse_factor)
+	TransG(int dim, int cluster,  double garma, double alpha, double sparse_factor, bool sot=true)
 		:GeometricEmbeddingModel(dim, alpha), n_cluster(cluster), 
-		garma(garma), sparse_factor(sparse_factor)
+		garma(garma), sparse_factor(sparse_factor), single_or_total(true)
 	 {
 		embedding_clusters.resize(set_relation.size());
 		for(auto &elem_vec : embedding_clusters)
@@ -408,6 +420,9 @@ public:
 public:
 	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
 	{
+		if (single_or_total == false)
+			return probability_triplets(triplet);
+
 		double	mixed_prob = 1e-8;
 		for(int c=0; c<n_cluster; ++c)
 		{
@@ -497,11 +512,24 @@ public:
 		head_f = normalise(head_f);
 		tail_f = normalise(tail_f);
 		
-		weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+		//weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+	}
+
+	virtual void train( double alpha )
+	{
+		EmbeddingModel::train(alpha);
+
+		//if (epos % 100 == 0)
+		//for(auto i=weights_clusters.begin(); i!=weights_clusters.end(); ++i)
+		//{
+		//	cout<<number_relation[i-weights_clusters.begin()]<<" : ";
+		//	copy(i->begin(), i->end(), ostream_iterator<double>(cout, ", "));
+		//	cout<<endl;
+		//}
 	}
 }; 
 
-class TransGA
+class TransGP
 	:public GeometricEmbeddingModel
 {
 protected:
@@ -509,14 +537,18 @@ protected:
 	vector<vector<vec>>		embedding_clusters;
 	vector<vector<mat>>		embedding_metric;
 	vector<vec>						weights_clusters;
-	double									garma;
-	double									lambda;
-	unsigned								time_limits;
+	double							garma;
+	double							lambda;
+	unsigned						time_limits;
+	double							sparse_factor;
+	const	bool					single_or_total;
+	mat									head_prior;
+	mat									tail_prior;
 
 public:
-	TransGA(int dim, int cluster, int time_limits, double garma, double lambda, double alpha)
+	TransGP(int dim, int cluster,  double garma, double alpha, double sparse_factor, bool sot=true)
 		:GeometricEmbeddingModel(dim, alpha), n_cluster(cluster), 
-		garma(garma), time_limits(time_limits ), lambda(lambda)
+		garma(garma), sparse_factor(sparse_factor), single_or_total(true)
 	{
 		embedding_clusters.resize(set_relation.size());
 		for(auto &elem_vec : embedding_clusters)
@@ -541,29 +573,42 @@ public:
 				elem = 1.0/n_cluster;
 			}
 		}
+
+		head_prior.resize(set_relation.size(), set_entity.size());
+		tail_prior.resize(set_relation.size(), set_entity.size());
 	}
 
 public:
 	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
-	{ 
-		if (epos < time_limits)
-			return probability_triplets(triplet);
-
-		double	mixed_prob = 1e-5;
-		for(int c=0; c<n_cluster; ++c)
+	{
+		double	mixed_prob = 1e-8;
+		if (single_or_total == false)
 		{
-			vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
-			- embedding_entity[triplet.first.second];
-			mixed_prob += fabs(weights_clusters[triplet.second][c]) 
-				* exp(-as_scalar(abs(error_c).t() * embedding_metric[triplet.second][c] * abs(error_c)));
+			for(int c=0; c<n_cluster; ++c)
+			{
+				vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+				- embedding_entity[triplet.first.second];
+				mixed_prob += fabs(weights_clusters[triplet.second][c]) * exp(-sum(abs(error_c)));
+			}
+		}
+		else
+		{
+			for(int c=0; c<n_cluster; ++c)
+			{
+				vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+						- embedding_entity[triplet.first.second];
+						mixed_prob = max(mixed_prob, fabs(weights_clusters[triplet.second][c]) * exp(-sum(abs(error_c))));
+			}
 		}
 
-		return mixed_prob;
+		return mixed_prob 
+			* exp(head_prior(triplet.second, triplet.first.first))
+			* exp(tail_prior(triplet.second, triplet.first.second));
 	}
 
 	virtual double probability_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
 	{
-		double	mixed_prob = 1e-5;
+		double	mixed_prob = 1e-8;
 		for(int c=0; c<n_cluster; ++c)
 		{
 			vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
@@ -571,7 +616,7 @@ public:
 			mixed_prob += fabs(weights_clusters[triplet.second][c]) * exp(-sum(abs(error_c)));
 		}
 
-		return mixed_prob;
+		return mixed_prob ;
 	}
 
 	virtual void train_cluster_once(	const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
@@ -592,6 +637,181 @@ public:
 			alpha /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
 		weights_clusters[triplet_f.second][cluster] -= 
 			alpha /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
+
+		weights_clusters[triplet.second][cluster] -= 
+			alpha * sign(weights_clusters[triplet.second][cluster]);
+
+		head -= alpha * sign(head + relation - tail) 
+			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
+		tail += alpha * sign(head + relation - tail)
+			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
+		relation -= alpha * sign(head + relation - tail)
+			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
+		head_f += alpha * sign(head_f + relation_f - tail_f)
+			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
+		tail_f -= alpha * sign(head_f + relation_f - tail_f)
+			* prob_local_false/prob_false  * fabs(weights_clusters[triplet.second][cluster]);
+		relation_f += alpha * sign(head_f + relation_f - tail_f)
+			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
+
+		relation = normalise(relation);
+		relation_f = normalise(relation_f);
+	}
+
+	virtual double train_once( const pair<pair<unsigned, unsigned>,unsigned>& triplet, double factor )
+	{
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		sample_false_triplet(triplet, triplet_f);
+
+		double prob_true = (probability_triplets(triplet));
+		double prob_false = (probability_triplets(triplet_f));
+
+		if (prob_true/prob_false > garma)
+			return 0;
+
+		for(int c=0; c<n_cluster; ++c)
+		{
+			train_cluster_once(triplet, triplet_f, c, prob_true, prob_false, factor);
+		}
+
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+
+		head_prior(triplet.second, triplet.first.first) += alpha;
+		tail_prior(triplet.second, triplet.first.second) += alpha;
+		
+		head_prior(triplet_f.second, triplet_f.first.first) -= alpha;
+		tail_prior(triplet_f.second, triplet_f.first.second) -= alpha;
+
+		head = normalise(head);
+		tail = normalise(tail);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+	}
+
+	virtual void train( double alpha )
+	{
+		EmbeddingModel::train(alpha);
+		head_prior = normalise(head_prior, 2, 1);
+		tail_prior = normalise(tail_prior, 2, 1);
+	}
+}; 
+
+class TransGPA
+	:public GeometricEmbeddingModel
+{
+protected:
+	int	n_cluster;
+	vector<vector<vec>>		embedding_clusters;
+	vector<vector<mat>>		embedding_metric;
+	vector<vec>						weights_clusters;
+	double							garma;
+	double							lambda;
+	unsigned						time_limits;
+	double							sparse_factor;
+	const	bool					single_or_total;
+	mat									head_prior;
+	mat									tail_prior;
+
+public:
+	TransGPA(	int dim, int cluster,  double garma, double alpha, double sparse_factor, 
+						int time_limit, double lamda = 1, bool sot=true)
+		:GeometricEmbeddingModel(dim, alpha), n_cluster(cluster),  lambda(lamda),
+		garma(garma), sparse_factor(sparse_factor), single_or_total(true), time_limits(time_limit)
+	{
+		embedding_clusters.resize(set_relation.size());
+		for(auto &elem_vec : embedding_clusters)
+		{
+			elem_vec.resize(n_cluster);
+			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = randu(dim,1);});
+		}
+
+		embedding_metric.resize(set_relation.size());
+		for(auto &elem_vec : embedding_metric)
+		{
+			elem_vec.resize(n_cluster);
+			for_each(elem_vec.begin(), elem_vec.end(), [=](mat& elem){elem = eye(dim,dim);});
+		}
+
+		weights_clusters.resize(set_relation.size());
+		for(auto & elem_vec : weights_clusters)
+		{
+			elem_vec.resize(n_cluster);
+			for(auto & elem : elem_vec)
+			{
+				elem = 1.0/n_cluster;
+			}
+		}
+
+		head_prior.resize(set_relation.size(), set_entity.size());
+		tail_prior.resize(set_relation.size(), set_entity.size());
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		double	mixed_prob = 1e-8;
+		if (single_or_total == false)
+		{
+			for(int c=0; c<n_cluster; ++c)
+			{
+				vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+				- embedding_entity[triplet.first.second];
+				mixed_prob += fabs(weights_clusters[triplet.second][c]) 
+					* exp(-as_scalar(abs(error_c).t()*embedding_metric[triplet.second][c]*abs(error_c)));
+			}
+		}
+		else
+		{
+			for(int c=0; c<n_cluster; ++c)
+			{
+				vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+				- embedding_entity[triplet.first.second];
+				mixed_prob = max(mixed_prob, 
+					fabs(weights_clusters[triplet.second][c])
+					* exp(-as_scalar(abs(error_c).t()*embedding_metric[triplet.second][c]*abs(error_c))));
+			}
+		}
+
+		return mixed_prob;
+	}
+
+	virtual double probability_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		double	mixed_prob = 1e-8;
+		for(int c=0; c<n_cluster; ++c)
+		{
+			vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+			- embedding_entity[triplet.first.second];
+			mixed_prob += fabs(weights_clusters[triplet.second][c]) * exp(-sum(abs(error_c)));
+		}
+
+		return mixed_prob ;
+	}
+
+	virtual void train_cluster_once(	const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
+		const pair<pair<unsigned, unsigned>,unsigned>& triplet_f, 
+		int cluster, double prob_true, double prob_false, double factor)
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_clusters[triplet.second][cluster];
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_clusters[triplet_f.second][cluster];
+
+		double prob_local_true =  exp(-sum(abs(head + relation - tail)));
+		double prob_local_false =  exp(-sum(abs(head_f + relation_f - tail_f)));
+
+		weights_clusters[triplet.second][cluster] += 
+			alpha /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
+		weights_clusters[triplet_f.second][cluster] -= 
+			alpha /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
+
+		weights_clusters[triplet.second][cluster] -= 
+			alpha * sign(weights_clusters[triplet.second][cluster]);
 
 		head -= alpha * sign(head + relation - tail) 
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
@@ -635,15 +855,13 @@ public:
 		tail = normalise(tail);
 		head_f = normalise(head_f);
 		tail_f = normalise(tail_f);
-
-		weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
 	}
 
-	virtual void train(double alpha)
-	{
+	virtual void train( double alpha )
+{
 		EmbeddingModel::train(alpha);
-
-		if  (epos == time_limits)
+		
+		if (epos == time_limits || epos%2000 == 0)
 		{
 			for(auto &elem_vec : embedding_metric)
 			{
@@ -670,11 +888,9 @@ public:
 					vec& relation_f = embedding_clusters[triplet_f.second][c];
 
 					embedding_metric[triplet.second][c] -=  
-						fabs(weights_clusters[triplet.second][c]) 
-						*exp(-sum(abs(head + relation - tail))) / prob_true 
+						exp(-sum(abs(head + relation - tail))) / prob_true 
 						* abs(head + relation - tail) * abs(head + relation - tail).t()
-						- fabs(weights_clusters[triplet_f.second][c])
-						* exp(-sum(abs(head_f + relation_f - tail_f))) / prob_false
+						- exp(-sum(abs(head_f + relation_f - tail_f))) / prob_false
 						* abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
 				}
 			}
@@ -683,7 +899,8 @@ public:
 			{
 				for(auto c=0; c<n_cluster; ++c)
 				{
-					embedding_metric[r][c] = lambda * (embedding_metric[r][c]);
+					embedding_metric[r][c] = 
+						lambda * normalise(embedding_metric[r][c]); // norm_common(embedding_metric[r][c]);
 				}
 			}
 		}
