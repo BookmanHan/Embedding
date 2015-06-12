@@ -22,19 +22,19 @@ using namespace boost;
 class EmbeddingModel
 {
 protected:
-	set<pair<pair<string, string>, string>>	check_data_train;
-	vector<pair<pair<string, string>, string>>	data_train;
-	vector<pair<pair<string, string>, string>>	data_dev_true;
-	vector<pair<pair<string, string>, string>>	data_dev_false;
-	vector<pair<pair<string, string>, string>>	data_test_true;
-	vector<pair<pair<string, string>, string>>	data_test_false;
+	set<pair<pair<string, string>, string> >	check_data_train;
+	vector<pair<pair<string, string>, string> >	data_train;
+	vector<pair<pair<string, string>, string> >	data_dev_true;
+	vector<pair<pair<string, string>, string> >	data_dev_false;
+	vector<pair<pair<string, string>, string> >	data_test_true;
+	vector<pair<pair<string, string>, string> >	data_test_false;
 	
-	set<pair<pair<unsigned, unsigned>, unsigned>>	i_check_data_train;
-	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_train;
-	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_dev_true;
-	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_dev_false;
-	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_true;
-	vector<pair<pair<unsigned, unsigned>, unsigned>>	i_data_test_false;
+	set<pair<pair<unsigned, unsigned>, unsigned> >	i_check_data_train;
+	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_train;
+	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_dev_true;
+	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_dev_false;
+	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_test_true;
+	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_test_false;
 
 	set<int>			pure_tail;
 	set<int>			pure_head;
@@ -51,13 +51,13 @@ protected:
 	map<string, int>	name_entity;
 	map<string, int>	name_relation;
 	map<string, int>	count_entity;
-	map<string, map<string, vector<string>>>     rel_heads;
-	map<string, map<string, vector<string>>>     rel_tails;
-	map<string, vector<string>>			gen_head;
-	map<string, vector<string>>			gen_tail;
+	map<string, map<string, vector<string> > >     rel_heads;
+	map<string, map<string, vector<string> > >     rel_tails;
+	map<string, vector<string> >			gen_head;
+	map<string, vector<string> >			gen_tail;
 	vector<int> rel_type;
-	map<int, map<int, int>>	tails;
-	map<int, map<int, int>>	heads;
+	map<int, map<int, int> >	tails;
+	map<int, map<int, int> >	heads;
 
 public:
 	ofstream	fout;
@@ -719,7 +719,7 @@ class MultiChannelEmbeddingModel
 {
 protected:
 	const unsigned int dim;
-	vector<vector<vec>> embeddings;
+	vector<vector<vec> > embeddings;
 
 public:
 	MultiChannelEmbeddingModel(int dim, double alpha)

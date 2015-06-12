@@ -12,9 +12,29 @@ int main(int argc, char* argv[])
 
 	EmbeddingModel*	model = nullptr;
 
-	model = new TransGPA(50, 3, exp(1), 0.001, 0.01, 10000, 0.8, true);
-	model->log("TransGPA(50, 3, exp(1), 0.001, 0.01, 10000, 0.8, true) @ FB.15K : ");
-	model->run(10000, true);
+	model = new TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 0.5, false);
+	model->log("TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 0.5, false) @ FB.15K : ");
+	model->run(8000);
+	delete model;
+
+	model = new TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 1.2, false);
+	model->log("TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 1.2, false) @ FB.15K : ");
+	model->run(8000);
+	delete model;
+
+	model = new TransGPA(50, 2, exp(0.5), 0.001, 0.01, 8000, 0.8, false);
+	model->log("TransGPA(50, 2, exp(0.5), 0.001, 0.01, 8000, 0.8, false) @ FB.15K : ");
+	model->run(8000);
+	delete model;
+
+	model = new TransGPA(50, 2, exp(2), 0.001, 0.01, 8000, 0.8, false);
+	model->log("TransGPA(50, 2, exp(2), 0.001, 0.01, 8000, 0.8, false) @ FB.15K : ");
+	model->run(8000);
+	delete model;
+
+	model = new TransGPA(50, 5, exp(1), 0.001, 0.01, 8000, 0.8, false);
+	model->log("TransGPA(50, 5, exp(1), 0.001, 0.01, 8000, 0.8, false) @ FB.15K : ");
+	model->run(8000);
 	delete model;
 
 	return 0;
