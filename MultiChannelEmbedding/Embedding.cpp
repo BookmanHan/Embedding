@@ -1,3 +1,4 @@
+#define BOOST_NO_0X_HDR_INITIALIZER_LIST
 #define Freebase
 #define LP
 #include "Model.hpp"
