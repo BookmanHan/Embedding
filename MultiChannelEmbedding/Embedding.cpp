@@ -8,12 +8,13 @@
 
 int main(int argc, char* argv[])
 {
-	omp_set_num_threads(4);
+	omp_set_num_threads(3);
+
 	EmbeddingModel*	model = nullptr;
 
-	model = new TransGPA(50, 2, exp(1), 0.001, 0.01, 10000, 1.0, false);
-	model->log("TransGPA(50, 2, exp(1), 0.001, 0.01, 10000, 1.0, false) @ FB.15K : ");
-	model->run(10000);
+	model = new TransGPA(50, 3, exp(1), 0.001, 0.01, 10000, 0.8, true);
+	model->log("TransGPA(50, 3, exp(1), 0.001, 0.01, 10000, 0.8, true) @ FB.15K : ");
+	model->run(10000, true);
 	delete model;
 
 	return 0;
