@@ -1,4 +1,3 @@
-#define BOOST_NO_0X_HDR_INITIALIZER_LIST
 #define Freebase
 #define LP
 #include "Model.hpp"
@@ -9,33 +8,28 @@
 
 int main(int argc, char* argv[])
 {
-	omp_set_num_threads(3);
+	//omp_set_num_threads(4);
 
 	EmbeddingModel*	model = nullptr;
+	
+	model = new TransE(2, 0.01);
+	
+	for(auto i=0; i<50; ++i)
+	{
+		model->train(0.01);
+		cout<<i<<endl;
+	}
 
-	model = new TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 0.5, false);
-	model->log("TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 0.5, false) @ FB.15K : ");
-	model->run(8000);
-	delete model;
+	for(auto i=0; i<18; ++i)
+	{
+		model->draw("D:\\TransE.FB15K.", 100, i);
+	}
 
-	model = new TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 1.2, false);
-	model->log("TransGPA(50, 2, exp(1), 0.001, 0.01, 8000, 1.2, false) @ FB.15K : ");
-	model->run(8000);
-	delete model;
+	//model->run(1000);
 
-	model = new TransGPA(50, 2, exp(0.5), 0.001, 0.01, 8000, 0.8, false);
-	model->log("TransGPA(50, 2, exp(0.5), 0.001, 0.01, 8000, 0.8, false) @ FB.15K : ");
-	model->run(8000);
-	delete model;
-
-	model = new TransGPA(50, 2, exp(2), 0.001, 0.01, 8000, 0.8, false);
-	model->log("TransGPA(50, 2, exp(2), 0.001, 0.01, 8000, 0.8, false) @ FB.15K : ");
-	model->run(8000);
-	delete model;
-
-	model = new TransGPA(50, 5, exp(1), 0.001, 0.01, 8000, 0.8, false);
-	model->log("TransGPA(50, 5, exp(1), 0.001, 0.01, 8000, 0.8, false) @ FB.15K : ");
-	model->run(8000);
+	//model = new TransG(50, 4, exp(2), 0.001, 0.01, true);
+	//model->log("TransG(50, 4, exp(2), 0.001, 0.01, true) @ WN.18 : ");
+	//model->run(10000, true);
 	delete model;
 
 	return 0;

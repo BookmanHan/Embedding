@@ -93,6 +93,8 @@ public:
 
 #ifdef Freebase
 		load_training("D:\\Data\\Freebase-15K\\train.txt");
+		load_training("D:\\Data\\Freebase-15K\\dev.txt");
+		//load_training("D:\\Data\\Freebase-15K\\test.txt");
 #elif defined FreebaseTC
 		load_training("D:\\Data\\Freebase\\train.txt");
 #elif defined WordnetTC
@@ -690,7 +692,7 @@ public:
 				test();
 #else
 			cout<<epos<<',';
-			if (round_turning && epos%2000 == 0)
+			if (round_turning && epos%1000 == 0)
 				test_hit();
 #endif
 		}
@@ -711,6 +713,11 @@ public:
 	virtual ~EmbeddingModel()
 	{
 		fout.close();
+	}
+
+	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation)
+	{
+		return;
 	}
 };
 
@@ -737,6 +744,18 @@ public:
 	}
 };
 
+inline
+string&   replace_all(string&   str,const   string&   old_value,const   string&   new_value)   
+{   
+	while(true)   {   
+		string::size_type   pos(0);   
+		if(   (pos=str.find(old_value))!=string::npos   )   
+			str.replace(pos,old_value.length(),new_value);   
+		else   break;   
+	}   
+	return   str;   
+}   
+
 class GeometricEmbeddingModel
 	:public EmbeddingModel
 {
@@ -757,6 +776,22 @@ public:
 
 		embedding_relation.resize(set_relation.size());
 		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
+	}
+
+	void draw(const string& filename, const unsigned radius, const unsigned id_relation)
+	{
+		mat	record(radius*6.0 +4, radius*6.0 + 4);
+		record.fill(255);
+		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
+		{
+			if (i->second == id_relation)
+			{
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0] - embedding_relation[i->second][0]), 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1] - embedding_relation[i->second][1])) = 0;
+			}
+		}
+
+		record.save(filename + replace_all(number_relation[id_relation], "/", "_") + ".ppm", pgm_binary);
 	}
 };
 

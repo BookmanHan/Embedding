@@ -126,6 +126,21 @@ public:
 		tail_f -= alpha * sign(head_f + relation_f - tail_f);
 		relation_f += alpha * sign(head_f + relation_f - tail_f);
 
+		if (norm(head) > 1.0)
+			head = normalise(head);
+		
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+
 		//head = normalise(head);
 		//tail = normalise(tail);
 		//relation = normalise(relation);
@@ -133,7 +148,7 @@ public:
 		//tail_f = normalise(tail_f);
 		//relation_f = normalise(relation_f);
 
-		relation_reg(triplet.second, rand()%set_relation.size(), factor);
+		//relation_reg(triplet.second, rand()%set_relation.size(), factor);
 	}
 };
 
@@ -519,13 +534,24 @@ public:
 	{
 		EmbeddingModel::train(alpha);
 
-		//if (epos % 100 == 0)
-		//for(auto i=weights_clusters.begin(); i!=weights_clusters.end(); ++i)
-		//{
-		//	cout<<number_relation[i-weights_clusters.begin()]<<" : ";
-		//	copy(i->begin(), i->end(), ostream_iterator<double>(cout, ", "));
-		//	cout<<endl;
-		//}
+		if (epos == 1000)
+		for(auto i=weights_clusters.begin(); i!=weights_clusters.end(); ++i)
+		{
+			//cout<<number_relation[i-weights_clusters.begin()]<<" : ";
+			int num = 0;
+			double max_elem = abs(*i).max();
+			double norma = norm(*i);
+			for_each(i->begin(), i->end(), 
+				[&](double & elem)
+			{
+				if (abs(elem) > 0.05 * max_elem)
+					++ num;
+				else
+					elem = 0;
+			});
+			//cout<<num;
+			//cout<<endl;
+		}
 	}
 }; 
 
@@ -861,7 +887,7 @@ public:
 {
 		EmbeddingModel::train(alpha);
 		
-		if (epos == time_limits || epos%2000 == 0)
+		if (epos == time_limits || epos%1000 == 0)
 		{
 			for(auto &elem_vec : embedding_metric)
 			{
@@ -888,10 +914,10 @@ public:
 					vec& relation_f = embedding_clusters[triplet_f.second][c];
 
 					embedding_metric[triplet.second][c] -=  
-						exp(-sum(abs(head + relation - tail))) / prob_true 
-						* abs(head + relation - tail) * abs(head + relation - tail).t()
-						- exp(-sum(abs(head_f + relation_f - tail_f))) / prob_false
-						* abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
+						//exp(-sum(head + relation + tail))/ prob_true * 
+						abs(head + relation - tail) * abs(head + relation - tail).t()
+						- //exp(-sum(head_f + relation_f + tail_f)) *
+						abs(head_f + relation_f - tail_f) * abs(head_f + relation_f - tail_f).t();
 				}
 			}
 
@@ -899,8 +925,8 @@ public:
 			{
 				for(auto c=0; c<n_cluster; ++c)
 				{
-					embedding_metric[r][c] = 
-						lambda * normalise(embedding_metric[r][c]); // norm_common(embedding_metric[r][c]);
+					embedding_metric[r][c] =
+						lambda * normalise(embedding_metric[r][c]);
 				}
 			}
 		}
