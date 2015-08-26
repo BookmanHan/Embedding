@@ -13,7 +13,16 @@
     <ClInclude Include="Embedding_Geometric.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="Embedding_MultiChannel.hpp">
+    <ClInclude Include="ModelConfig.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Import.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DataModel.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometricModel.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>

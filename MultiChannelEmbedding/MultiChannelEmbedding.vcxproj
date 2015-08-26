@@ -407,9 +407,12 @@
     <ClCompile Include="Embedding.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DataModel.hpp" />
+    <ClInclude Include="GeometricModel.hpp" />
+    <ClInclude Include="Import.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="Embedding_Geometric.hpp" />
-    <ClInclude Include="Embedding_MultiChannel.hpp" />
+    <ClInclude Include="ModelConfig.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

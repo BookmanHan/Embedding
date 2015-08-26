@@ -1,415 +1,77 @@
 #pragma once
-#include <iostream>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <arma>
-#include <map>
-#include <set>
-#include <cstdlib>
-#include <algorithm>
-#include <cmath>
-#include <cctype>
-#include <iomanip>
+#include "Import.hpp"
+#include "ModelConfig.hpp"
+#include "DataModel.hpp"
 
 using namespace std;
 using namespace arma;
 
-class EmbeddingModel
+class Model
 {
 protected:
-	set<pair<pair<string, string>, string> >	check_data_train;
-	vector<pair<pair<string, string>, string> >	data_train;
-	vector<pair<pair<string, string>, string> >	data_dev_true;
-	vector<pair<pair<string, string>, string> >	data_dev_false;
-	vector<pair<pair<string, string>, string> >	data_test_true;
-	vector<pair<pair<string, string>, string> >	data_test_false;
-	
-	set<pair<pair<unsigned, unsigned>, unsigned> >	i_check_data_train;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_train;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_dev_true;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_dev_false;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_test_true;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	i_data_test_false;
-
-	set<int>			pure_tail;
-	set<int>			pure_head;
-	set<string>	set_entity;
-	set<string>	set_relation;
-	vector<set<int>>	set_tail;
-	vector<set<int>>	type_set_tail;
-	vector<string>	number_entity;
-	vector<string>	number_relation;
-	vector<double>	prob_head;
-	vector<double> prob_tail;
-	vector<double>		relation_tph;
-	vector<double>		relation_hpt;		
-	map<string, int>	name_entity;
-	map<string, int>	name_relation;
-	map<string, int>	count_entity;
-	map<string, map<string, vector<string> > >     rel_heads;
-	map<string, map<string, vector<string> > >     rel_tails;
-	map<string, vector<string> >			gen_head;
-	map<string, vector<string> >			gen_tail;
-	vector<int> rel_type;
-	map<int, map<int, int> >	tails;
-	map<int, map<int, int> >	heads;
+	const DataModel		data_model;
+	const TaskType		task_type;
+	ModelLogging		logging;
 
 public:
-	ofstream	fout;
-
-protected:
-	const double	alpha;
-	unsigned int	epos;
-	double			best_result;
-	double			best_mean;
-	double			best_hitatten;
-	double			best_fmean;
-	double			best_fhitatten;
+	unsigned	epos;
 
 public:
-	EmbeddingModel(double alpha)
-		:alpha(alpha), best_result(0), best_mean(1e7), best_hitatten(0)
-		,best_fmean(1e7), best_fhitatten(0)
-	{
-		const time_t log_time = time(nullptr);
-		struct tm* current_time = localtime(&log_time);
-		stringstream ss;
-		ss<<1900 + current_time->tm_year<<"-";
-		ss<<setfill('0')<<setw(2)<<current_time->tm_mon + 1<<"-";
-		ss<<setfill('0')<<setw(2)<<current_time->tm_mday<<" ";
-		ss<<setfill('0')<<setw(2)<<current_time->tm_hour<<".";
-		ss<<setfill('0')<<setw(2)<<current_time->tm_min<<".";
-		ss<<setfill('0')<<setw(2)<<current_time->tm_sec;
-		
-		fout.open((string("G:\\สตั้\\Report\\Experiment.Embedding\\")
-			+ ss.str() + ".log").c_str());
-
-		epos = 0;
-
-#ifdef Freebase
-		load_training("G:\\Data\\Freebase-15K\\train.txt");
-#elif defined FreebaseTC
-		load_training("G:\\Data\\Freebase\\train.txt");
-#elif defined WordnetTC
-		load_training("G:\\Data\\Wordnet\\train.txt");
-#else
-		load_training("G:\\Data\\Wordnet-18\\train.txt");
-#endif
-
-		relation_hpt.resize(set_relation.size());
-		relation_tph.resize(set_relation.size());
-		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
-		{
-			double sum = 0;
-			double total = 0;
-			for(auto ds=rel_heads[*i].begin(); ds!=rel_heads[*i].end(); ++ds)
-			{
-				++ sum;
-				total += ds->second.size();
-			}
-			relation_tph[name_relation[*i]] = total / sum;
-		}
-		for(auto i=set_relation.begin(); i!=set_relation.end(); ++i)
-		{
-			double sum = 0;
-			double total = 0;
-			for(auto ds=rel_tails[*i].begin(); ds!=rel_tails[*i].end(); ++ds)
-			{
-				++ sum;
-				total += ds->second.size();
-			}
-			relation_hpt[name_relation[*i]] = total / sum;
-		}
-
-		number_entity.resize(set_entity.size());
-		number_relation.resize(set_relation.size());
-		for(auto i=name_entity.begin(); i!=name_entity.end(); ++i)
-		{
-			number_entity[i->second] = i->first;
-		}
-		for(auto i=name_relation.begin(); i!=name_relation.end(); ++i)
-		{
-			number_relation[i->second] = i->first;
-		}
-
-#ifdef Freebase
-		load_testing("G:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("G:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("G:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("G:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
-#elif defined FreebaseTC
-		load_testing("G:\\Data\\Freebase\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("G:\\Data\\Freebase\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("G:\\Data\\Freebase\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("G:\\Data\\Freebase\\test.txt", i_data_test_true, i_data_test_false, false);
-#elif defined WordnetTC
-		load_testing("G:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("G:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("G:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("G:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
-#else
-		load_testing("G:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("G:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("G:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("G:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
-
-#endif
-
-		cout<<"Entities = "<<set_entity.size()<<endl;
-
-		set_tail.resize(set_relation.size());
-		prob_head.resize(set_entity.size());
-		prob_tail.resize(set_entity.size());
-		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
-		{
-			pure_tail.insert(i->first.second);
-			pure_head.insert(i->first.first);
-
-			set_tail[i->second].insert(i->first.second);
-
-			++ prob_head[i->first.first];
-			++ prob_tail[i->first.second];
-
-			++ tails[i->second][i->first.first];
-			++ heads[i->second][i->first.second];
-		}
-		for(auto i=i_data_dev_true.begin(); i!=i_data_dev_true.end(); ++i)
-		{
-			set_tail[i->second].insert(i->first.second);
-		}
-
-		for(auto & elem : prob_head)
-		{
-			elem /= i_data_train.size();
-		}
-
-		for(auto & elem : prob_tail)
-		{
-			elem /= i_data_train.size();
-		}
-
-		rel_type.resize(set_relation.size());
-		for(auto i=0; i<set_relation.size(); ++i)
-		{
-			if (relation_tph[i]<1.5 && relation_hpt[i]<1.5)
-			{
-				rel_type[i] = 1;
-			}
-			else if (relation_hpt[i] <1.5 && relation_tph[i] >= 1.5)
-			{
-				rel_type[i] = 2;
-			}
-			else if (relation_hpt[i] >=1.5 && relation_tph[i] < 1.5)
-			{
-				rel_type[i] = 3;
-			}
-			else
-			{
-				rel_type[i] = 4;
-			}
-		}
-
-		double a[5] = {0};
-		for(auto i=0; i<set_relation.size(); ++i)
-		{
-			++a[rel_type[i]];
-		}
-		cout<<a[1]/set_relation.size()<<endl;
-		cout<<a[2]/set_relation.size()<<endl;
-		cout<<a[3]/set_relation.size()<<endl;
-		cout<<a[4]/set_relation.size()<<endl;
-
-		type_set_tail.resize(5);
-		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
-		{
-			type_set_tail[rel_type[i->second]].insert(i->first.second);
-		}
-
-		unsigned count = 0;
-		cout<<pure_head.size()<<endl;
-		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
-		{
-			if (pure_head.find(i->first.first) == pure_tail.end())
-			{
-				++count;
-			}
-		}
-		cout<<count<<endl;
-	}
-
-	void load_training(const string& filename)
-	{
-		fstream fin(filename);
-		while(!fin.eof())
-		{
-			string head, tail, relation;
-			fin>>head>>relation>>tail;
-			data_train.push_back(make_pair(make_pair(head,tail),relation));
-			
-			check_data_train.insert(make_pair(make_pair(head,tail),relation));
-			set_entity.insert(head);
-			set_entity.insert(tail);
-			set_relation.insert(relation);
-			++ count_entity[head];
-			++ count_entity[tail];
-
-			if (name_entity.find(head) == name_entity.end())
-			{
-				name_entity.insert(make_pair(head, name_entity.size()));
-			}
-
-			if (name_entity.find(tail) == name_entity.end())
-			{
-				name_entity.insert(make_pair(tail, name_entity.size()));
-			}
-
-			if (name_relation.find(relation) == name_relation.end())
-			{
-				name_relation.insert(make_pair(relation, name_relation.size()));
-			}
-
-			rel_heads[relation][head].push_back(tail);
-			rel_tails[relation][tail].push_back(head);
-			gen_head[relation].push_back(head);
-			gen_tail[relation].push_back(tail);
-
-			i_check_data_train.insert(make_pair(make_pair(name_entity[head], name_entity[tail]), 
-				name_relation[relation]));
-			i_data_train.push_back(make_pair(make_pair(name_entity[head],name_entity[tail]),
-				name_relation[relation]));
-		}
-
-		fin.close();
-	}
-
-	void load_testing(	const string& filename, 
-		vector<pair<pair<string, string>,string>>& vin_true,
-		vector<pair<pair<string, string>,string>>& vin_false,
-		bool self_sampling = false)
-	{
-		fstream fin(filename);
-		if (self_sampling == false)
-		{
-			while(!fin.eof())
-			{
-				string head, tail, relation;
-				int flag_true;
-
-				fin>>head>>relation>>tail;
-				fin>>flag_true;
-
-				if (flag_true == 1)
-					vin_true.push_back(make_pair(make_pair(head,tail),relation));
-				else
-					vin_false.push_back(make_pair(make_pair(head, tail),relation));
-			}
-		}
-		else
-		{
-			while(!fin.eof())
-			{
-				string head, tail, relation;
-				pair<pair<string, string>,string>	sample_false;
-				fin>>head>>relation>>tail;
-				sample_false_triplet(make_pair(make_pair(head, tail), relation), sample_false);
-
-				vin_true.push_back(make_pair(make_pair(head, tail),relation));
-				vin_false.push_back(sample_false); 
-
-				check_data_train.insert(make_pair(make_pair(head, tail), relation));
-			}
-		}
-
-		fin.close();
-	}
-
-	void i_load_testing(	const string& filename, 
-		vector<pair<pair<unsigned, unsigned>,unsigned>>& vin_true,
-		vector<pair<pair<unsigned, unsigned>,unsigned>>& vin_false,
-		bool self_sampling = false)
-	{
-		fstream fin(filename);
-		if (self_sampling == false)
-		{
-			while(!fin.eof())
-			{
-				string head, tail, relation;
-				int flag_true;
-
-				fin>>head>>relation>>tail;
-				fin>>flag_true;
-
-				if (flag_true == 1)
-					vin_true.push_back(make_pair(make_pair(name_entity[head], name_entity[tail]),
-						name_relation[relation]));
-				else
-					vin_false.push_back(make_pair(make_pair(name_entity[head], name_entity[tail]),
-					name_relation[relation]));
-			}
-		}
-		else
-		{
-			while(!fin.eof())
-			{
-				string head, tail, relation;
-				pair<pair<unsigned, unsigned>, unsigned>	sample_false;
-				fin>>head>>relation>>tail;
-				sample_false_triplet(make_pair(make_pair(name_entity[head], name_entity[tail]),
-					name_relation[relation]), sample_false);
-
-				vin_true.push_back(make_pair(make_pair(name_entity[head], name_entity[tail]),
-					name_relation[relation]));
-				vin_false.push_back(sample_false); 
-
-				i_check_data_train.insert(make_pair(make_pair(name_entity[head], name_entity[tail]),
-					name_relation[relation]));
-			}
-		}
-
-		fin.close();
-	}
-
-public:
-	virtual double prob_triplets(const pair<pair<string, string>,string>& triplet)
+	Model(	const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path)
+		:data_model(dataset), task_type(task_type), logging(logging_base_path)
 	{
 		;
 	}
 
-	virtual double prob_triplets(const pair<pair<unsigned, unsigned>,unsigned>& triplet)
-	{
-		return prob_triplets(make_pair(make_pair(number_entity[triplet.first.first],
-			number_entity[triplet.first.second]), number_relation[triplet.second]));
-	}
+public:
+	virtual double prob_triplets(const pair<pair<unsigned, unsigned>,unsigned>& triplet) = 0;
+	virtual void train_triplet(const pair<pair<unsigned, unsigned>,unsigned>& triplet) = 0;
 
-	virtual double train_once(	const pair<pair<string, string>,string>& triplet,
-		double factor) 
+public:
+	virtual void train(bool last_time = false)
 	{
-		;
-	}
+		++ epos;
 
-	virtual double train_once(	const pair<pair<unsigned, unsigned>,unsigned>& triplet,
-		double factor) 
-	{
-		train_once(make_pair(make_pair(triplet.first.first,triplet.first.second), triplet.second), alpha);
+#pragma omp parallel for
+		for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
+		{
+			train_triplet(*i);
+		}
 	}
 
 public:
-	double test()
+	double		best_triplet_result;
+	double		best_link_mean;
+	double		best_link_hitatten;
+	double		best_link_fmean;
+	double		best_link_fhitatten;
+
+	void test(unsigned hit_rank)
+	{
+		++ epos;
+		if (task_type == LinkPredictionHead ||task_type == LinkPredictionTail)
+			test_link_prediction(hit_rank);
+		else
+			test_triplet_classification();
+	}
+
+public:
+	void test_triplet_classification()
 	{
 		double real_hit = 0;
-		for(auto r=0; r<set_relation.size(); ++r)
+		for(auto r=0; r<data_model.set_relation.size(); ++r)
 		{
 			vector<pair<double, bool>>	threshold_dev;
-			for(auto i=i_data_dev_true.begin(); i!=i_data_dev_true.end(); ++i)
+			for(auto i=data_model.data_dev_true.begin(); i!=data_model.data_dev_true.end(); ++i)
 			{
 				if (i->second != r)
 					continue;
 
 				threshold_dev.push_back(make_pair(prob_triplets(*i), true));
 			}
-			for(auto i=i_data_dev_false.begin(); i!=i_data_dev_false.end(); ++i)
+			for(auto i=data_model.data_dev_false.begin(); i!=data_model.data_dev_false.end(); ++i)
 			{
 				if (i->second != r)
 					continue;
@@ -429,16 +91,16 @@ public:
 					++ hit;
 				++ total;
 
-				if (vari_mark <= 2*hit - total + data_dev_true.size())
+				if (vari_mark <= 2*hit - total + data_model.data_dev_true.size())
 				{
-					vari_mark = 2*hit - total + data_dev_true.size();
+					vari_mark = 2*hit - total + data_model.data_dev_true.size();
 					threshold = i->first;
 				}
 			}
 
 			double lreal_hit = 0;
 			double lreal_total = 0;
-			for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
+			for(auto i=data_model.data_test_true.begin(); i!=data_model.data_test_true.end(); ++i)
 			{
 				if (i->second != r)
 					continue;
@@ -448,7 +110,7 @@ public:
 					++ real_hit, ++lreal_hit;
 			}
 
-			for(auto i=i_data_test_false.begin(); i!=i_data_test_false.end(); ++i)
+			for(auto i=data_model.data_test_false.begin(); i!=data_model.data_test_false.end(); ++i)
 			{
 				if (i->second != r)
 					continue;
@@ -458,53 +120,47 @@ public:
 					++ real_hit, ++ lreal_hit;
 			}
 
-			cout<<number_relation[r]<<":"<<lreal_hit/lreal_total<<endl;
+			logging.record()<<data_model.relation_id_to_name[r]<<'\t'
+				<<lreal_hit/lreal_total;
 		}
 
-		cout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size());
-		best_result = max(best_result, real_hit/(data_test_true.size() + data_test_false.size()));
-		cout<<", Best = "<<best_result<<endl;
+		std::cout<<epos<<"\t Accuracy = "
+			<<real_hit/(data_model.data_test_true.size() + data_model.data_test_false.size());
+		best_triplet_result = max(
+			best_triplet_result, 
+			real_hit/(data_model.data_test_true.size() + data_model.data_test_false.size()));
+		std::cout<<", Best = "<<best_triplet_result<<endl;
 
-		fout<<epos<<"\t Accuracy = "<<real_hit/(data_test_true.size() + data_test_false.size());
-		fout<<", Best = "<<best_result<<endl;
-
-		return real_hit/(data_test_true.size() + data_test_false.size());
+		logging.record()<<epos<<"\t Accuracy = "
+			<<real_hit/(data_model.data_test_true.size() + data_model.data_test_false.size())
+			<<", Best = "<<best_triplet_result;
 	}
 
-	virtual void train(double alpha)
-	{
-#pragma omp parallel for
-		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
-		{
-			train_once(*i, alpha);
-		}
-	}
-
-	void test_hit(bool ch=true)
+	void test_link_prediction(unsigned hit_rank = 10)
 	{
 		double mean = 0;
 		double hits = 0;
 		double fmean = 0;
 		double fhits = 0;
-		double total = i_data_test_true.size();
+		double total = data_model.data_test_true.size();
 
 		double arr_mean[20] = {0};
 		double arr_total[5] = {0};
 
-		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
+		for(auto i=data_model.data_test_true.begin(); i!=data_model.data_test_true.end(); ++i)
 		{
-			++ arr_total[rel_type[i->second]];
+			++ arr_total[data_model.relation_type[i->second]];
 		}
 
 		unsigned cnt = 0;
 
 #pragma omp parallel for
-		for(auto i=i_data_test_true.begin(); i!=i_data_test_true.end(); ++i)
+		for(auto i=data_model.data_test_true.begin(); i!=data_model.data_test_true.end(); ++i)
 		{
 			++cnt;
 			if (cnt%100 == 0)
 			{
-				cout<<cnt<<',';
+				std::cout<<cnt<<',';
 			}
 
 			auto t = *i;
@@ -512,18 +168,17 @@ public:
 			int rmean = 0;
 			double score_i = prob_triplets(*i);
 
-			for(auto j=0; j!=set_entity.size(); ++j)
+			for(auto j=0; j!=data_model.set_entity.size(); ++j)
 			{
-#ifdef Head
-				t.first.first = j;
-#else
-				t.first.second = j;
-#endif
+				if (task_type == LinkPredictionHead)
+					t.first.first = j;
+				else
+					t.first.second = j;
 
 				if (score_i < prob_triplets(t))
 					++ rmean;
 
-				if (i_check_data_train.find(t) != i_check_data_train.end())
+				if (data_model.check_data_train.find(t) != data_model.check_data_train.end())
 					continue;
 
 				if (score_i < prob_triplets(t))
@@ -532,275 +187,54 @@ public:
 
 #pragma omp critical
 			{
-				if (frmean<10)
-					++ arr_mean[rel_type[i->second]];
-				
+				if (frmean < hit_rank)
+					++ arr_mean[data_model.relation_type[i->second]];
+
 				mean += rmean;
 				fmean += frmean;
-				if (rmean < 10)
+				if (rmean < hit_rank)
 					++ hits;
-				if (frmean< 10)
+				if (frmean< hit_rank)
 					++ fhits;
 			}
 		}
 
-		cout<<endl;
-		fout<<endl;
+		std::cout<<endl;
 		for(auto i=1; i<=4; ++i)
 		{
-			cout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
-			fout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
+			std::cout<<i<<':'<<arr_mean[i]/arr_total[i]<<endl;
+			logging.record()<<i<<':'<<arr_mean[i]/arr_total[i];
 		}
-		fout<<endl;
+		logging.record();
 
-		best_mean = min(best_mean, mean/total);
-		best_hitatten = max(best_hitatten, hits/total);
-		best_fmean = min(best_fmean, fmean/total);
-		best_fhitatten = max(best_fhitatten, fhits/total);
+		best_link_mean = min(best_link_mean, mean/total);
+		best_link_hitatten = max(best_link_hitatten, hits/total);
+		best_link_fmean = min(best_link_fmean, fmean/total);
+		best_link_fhitatten = max(best_link_fhitatten, fhits/total);
 
-		cout<<"Raw.BestMEANS = "<<best_mean<<endl;
-		cout<<"Raw.BestHITS = "<<best_hitatten<<endl;
-		fout<<"Raw.BestMEANS = "<<best_mean<<endl;
-		fout<<"Raw.BestHITS = "<<best_hitatten<<endl;
-		cout<<"Filter.BestMEANS = "<<best_fmean<<endl;
-		cout<<"Filter.BestHITS = "<<best_fhitatten<<endl;
-		fout<<"Filter.BestMEANS = "<<best_fmean<<endl;
-		fout<<"Filter.BestHITS = "<<best_fhitatten<<endl;
+		std::cout<<"Raw.BestMEANS = "<<best_link_mean<<endl;
+		std::cout<<"Raw.BestHITS = "<<best_link_hitatten<<endl;
+		logging.record()<<"Raw.BestMEANS = "<<best_link_mean;
+		logging.record()<<"Raw.BestHITS = "<<best_link_hitatten;
+		std::cout<<"Filter.BestMEANS = "<<best_link_fmean<<endl;
+		std::cout<<"Filter.BestHITS = "<<best_link_fhitatten<<endl;
+		logging.record()<<"Filter.BestMEANS = "<<best_link_fmean;
+		logging.record()<<"Filter.BestHITS = "<<best_link_fhitatten;
 	}
 
-public:
-	void sample_false_triplet(	const pair<pair<string,string>,string>& origin,
-								pair<pair<string,string>,string>& triplet)
-	{
-		
-		double prob = relation_hpt[name_relation[origin.second]]
-			/(relation_hpt[name_relation[origin.second]] + relation_tph[name_relation[origin.second]]);
-		
-		triplet = origin;
-		while(true)
-		{
-			if(rand()%1000 < 1000 * prob)
-			{
-				triplet.first.second = number_entity[rand()%number_entity.size()];
-			}
-			else
-			{
-				triplet.first.first = number_entity[rand()%number_entity.size()];
-			}
-
-			if (check_data_train.find(triplet) == check_data_train.end())
-				return;
-		}
-	}
-
-	void sample_false_triplet(	const pair<pair<unsigned,unsigned>,unsigned>& origin,
-		pair<pair<unsigned,unsigned>,unsigned>& triplet)
-	{
-
-		double prob = relation_hpt[origin.second]/(relation_hpt[origin.second] + relation_tph[origin.second]);
-
-		triplet = origin;
-		while(true)
-		{
-			if(rand()%1000 < 1000 * prob)
-			{
-				triplet.first.second = rand()%number_entity.size();
-			}
-			else
-			{
-				triplet.first.first = rand()%number_entity.size();
-			}
-
-			if (i_check_data_train.find(triplet) == i_check_data_train.end())
-				return;
-		}
-	}
-
-	void sample_triplet(	
-		const pair<pair<string,string>,string>& origin,
-		pair<pair<string,string>,string>& triplet,
-		bool head, bool relation, bool tail)
-	{
-		triplet = origin;
-		if (relation)
-		{
-			triplet.second = number_relation[rand()%number_relation.size()];
-		}
-		if (head)
-		{
-			triplet.first.first = number_entity[rand()%number_entity.size()];
-		}
-		if (tail)
-		{
-			triplet.first.second = number_entity[rand()%number_entity.size()];
-		}
-	}
-
-	void sample_triplet(	
-		const pair<pair<unsigned,unsigned>,unsigned>& origin,
-		pair<pair<unsigned,unsigned>,unsigned>& triplet,
-		bool head, bool relation, bool tail)
-	{
-		triplet = origin;
-		if (relation)
-		{
-			triplet.second = rand()%number_relation.size();
-		}
-		if (head)
-		{
-			triplet.first.first = rand()%number_entity.size();
-		}
-		if (tail)
-		{
-			triplet.first.second = rand()%number_entity.size();
-		}
-	}
-
-public:
-	void search_head(const string& tail, const string& relation)
-	{
-		vector<pair<double, string>>	runs;
-		for(auto i=set_entity.begin(); i!=set_entity.end(); ++i)
-		{
-			runs.push_back(make_pair(- prob_triplets(make_pair(make_pair(*i, tail), relation)),*i));
-		}
-
-		sort(runs.begin(), runs.end());
-		for(auto i=0; i<30; ++i)
-		{
-			cout<<runs[i].second<<endl;
-		}
-	}
-
-public:
-	virtual void run(int max_epos = 500, bool round_turning = false)
-	{
-		best_result = 0;
-		epos = 0;
-		while(max_epos--)
-		{
-			++ epos;
-			train(alpha);
-
-#ifndef  LP
-			if (round_turning)
-				test();
-#else
-			cout<<epos<<',';
-			if (round_turning && epos%1000 == 0)
-				test_hit();
-#endif
-		}
-		
-		cout<<endl;
-#ifdef LP
-		test_hit();
-#else
-		test();
-#endif
-	}
-
-	void log(const string& words)
-	{
-		fout<<words<<endl;
-	}
-
-	virtual ~EmbeddingModel()
-	{
-		fout.close();
-	}
-
-	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation)
+	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
 	{
 		return;
 	}
-};
-
-class MultiChannelEmbeddingModel
-	:public EmbeddingModel
-{
-protected:
-	const unsigned int dim;
-	vector<vector<vec> > embeddings;
 
 public:
-	MultiChannelEmbeddingModel(int dim, double alpha)
-		:dim(dim), EmbeddingModel(alpha)
+	unsigned count_entity() const
 	{
-		embeddings.resize(set_relation.size());
-		for(auto i=embeddings.begin(); i!=embeddings.end(); ++i)
-		{
-			i->resize(set_entity.size());
-			for(auto e=i->begin(); e!=i->end(); ++e)
-			{
-				*e = randu(dim, 1);
-			}
-		}
-	}
-};
-
-inline
-string&   replace_all(string&   str,const   string&   old_value,const   string&   new_value)   
-{   
-	while(true)   {   
-		string::size_type   pos(0);   
-		if(   (pos=str.find(old_value))!=string::npos   )   
-			str.replace(pos,old_value.length(),new_value);   
-		else   break;   
-	}   
-	return   str;   
-}   
-
-class GeometricEmbeddingModel
-	:public EmbeddingModel
-{
-protected:
-	vector<vec>	embedding_entity;
-	vector<vec>	embedding_relation;
-	const unsigned	dim;
-
-protected:
-	enum componet	{componet_hyper, componet_head, componet_tail, componet_relation, componet_matr, componet_mata};
-
-public:
-	GeometricEmbeddingModel(int dim, double alpha)
-		:dim(dim), EmbeddingModel(alpha)
-	{
-		embedding_entity.resize(set_entity.size());
-		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
-
-		embedding_relation.resize(set_relation.size());
-		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
+		return data_model.set_entity.size();
 	}
 
-	void draw(const string& filename, const unsigned radius, const unsigned id_relation)
+	unsigned count_relation() const
 	{
-		mat	record(radius*6.0 +4, radius*6.0 + 4);
-		record.fill(255);
-		for(auto i=i_data_train.begin(); i!=i_data_train.end(); ++i)
-		{
-			if (i->second == id_relation)
-			{
-				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0] - embedding_relation[i->second][0]), 
-					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1] - embedding_relation[i->second][1])) = 0;
-			}
-		}
-
-		record.save(filename + replace_all(number_relation[id_relation], "/", "_") + ".ppm", pgm_binary);
-	}
-};
-
-class GeneralGeometricEmbeddingModel
-	:public GeometricEmbeddingModel
-{
-protected:
-	vector<mat>	mat_relation;
-
-public:
-	GeneralGeometricEmbeddingModel(int dim, double alpha)
-		:GeometricEmbeddingModel(dim, alpha)
-	{
-		mat_relation.resize(set_relation.size());
-		for_each(mat_relation.begin(), mat_relation.end(), [=](mat& elem){elem = eye(dim,dim);});
+		return data_model.set_relation.size();
 	}
 };
