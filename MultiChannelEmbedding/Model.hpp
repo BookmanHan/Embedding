@@ -41,6 +41,16 @@ public:
 		}
 	}
 
+	void run(unsigned total_epos)
+	{
+		-- total_epos;
+		while(total_epos --> 0)
+		{
+			train();
+		}
+
+		train(true);
+	}
 public:
 	double		best_triplet_result;
 	double		best_link_mean;
@@ -48,7 +58,7 @@ public:
 	double		best_link_fmean;
 	double		best_link_fhitatten;
 
-	void test(unsigned hit_rank)
+	void test(unsigned hit_rank = 10)
 	{
 		++ epos;
 		if (task_type == LinkPredictionHead ||task_type == LinkPredictionTail)
