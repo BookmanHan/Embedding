@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 
 	for(auto i=0; i<18; ++i)
 	{
-		model->draw("D:\\TransE.FB15K.", 100, i);
+		model->draw("F:\\TransE.FB15K.", 100, i);
 	}
 
 	//model->run(1000);

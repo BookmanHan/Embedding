@@ -1,9 +1,6 @@
 #pragma once
 #include "Model.hpp"
 
-#pragma once
-#include "Model.hpp"
-
 inline double sign(const double& x)
 {
 	if (x==0)

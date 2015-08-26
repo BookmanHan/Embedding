@@ -12,12 +12,9 @@
 #include <cmath>
 #include <cctype>
 #include <iomanip>
-#include <boost/progress.hpp>
-#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace arma;
-using namespace boost;
 
 class EmbeddingModel
 {
@@ -86,21 +83,19 @@ public:
 		ss<<setfill('0')<<setw(2)<<current_time->tm_min<<".";
 		ss<<setfill('0')<<setw(2)<<current_time->tm_sec;
 		
-		fout.open((string("E:\\实验\\Report\\Experiment.Embedding\\")
+		fout.open((string("G:\\实验\\Report\\Experiment.Embedding\\")
 			+ ss.str() + ".log").c_str());
 
 		epos = 0;
 
 #ifdef Freebase
-		load_training("D:\\Data\\Freebase-15K\\train.txt");
-		load_training("D:\\Data\\Freebase-15K\\dev.txt");
-		//load_training("D:\\Data\\Freebase-15K\\test.txt");
+		load_training("G:\\Data\\Freebase-15K\\train.txt");
 #elif defined FreebaseTC
-		load_training("D:\\Data\\Freebase\\train.txt");
+		load_training("G:\\Data\\Freebase\\train.txt");
 #elif defined WordnetTC
-		load_training("D:\\Data\\Wordnet\\train.txt");
+		load_training("G:\\Data\\Wordnet\\train.txt");
 #else
-		load_training("D:\\Data\\Wordnet-18\\train.txt");
+		load_training("G:\\Data\\Wordnet-18\\train.txt");
 #endif
 
 		relation_hpt.resize(set_relation.size());
@@ -140,25 +135,25 @@ public:
 		}
 
 #ifdef Freebase
-		load_testing("D:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("D:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("D:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
+		load_testing("G:\\Data\\Freebase-15K\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("G:\\Data\\Freebase-15K\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("G:\\Data\\Freebase-15K\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("G:\\Data\\Freebase-15K\\test.txt", i_data_test_true, i_data_test_false, true);
 #elif defined FreebaseTC
-		load_testing("D:\\Data\\Freebase\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("D:\\Data\\Freebase\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("D:\\Data\\Freebase\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("D:\\Data\\Freebase\\test.txt", i_data_test_true, i_data_test_false, false);
+		load_testing("G:\\Data\\Freebase\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("G:\\Data\\Freebase\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("G:\\Data\\Freebase\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("G:\\Data\\Freebase\\test.txt", i_data_test_true, i_data_test_false, false);
 #elif defined WordnetTC
-		load_testing("D:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
-		load_testing("D:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
-		i_load_testing("D:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
-		i_load_testing("D:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
+		load_testing("G:\\Data\\Wordnet\\dev.txt", data_dev_true, data_dev_false, false);
+		load_testing("G:\\Data\\Wordnet\\test.txt", data_test_true, data_test_false, false);
+		i_load_testing("G:\\Data\\Wordnet\\dev.txt", i_data_dev_true, i_data_dev_false, false);
+		i_load_testing("G:\\Data\\Wordnet\\test.txt", i_data_test_true, i_data_test_false, false);
 #else
-		load_testing("D:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
-		load_testing("D:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
-		i_load_testing("D:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
+		load_testing("G:\\Data\\Wordnet-18\\dev.txt", data_dev_true, data_dev_false, true);
+		load_testing("G:\\Data\\Wordnet-18\\test.txt", data_test_true, data_test_false, true);
+		i_load_testing("G:\\Data\\Wordnet-18\\dev.txt", i_data_dev_true, i_data_dev_false, true);
+		i_load_testing("G:\\Data\\Wordnet-18\\test.txt", i_data_test_true, i_data_test_false, true);
 
 #endif
 
