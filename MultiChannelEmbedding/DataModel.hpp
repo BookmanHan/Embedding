@@ -81,6 +81,8 @@ public:
 		load_testing(dataset.base_dir + dataset.developing, data_dev_true, data_dev_false, dataset.self_false_sampling);
 		load_testing(dataset.base_dir + dataset.testing, data_test_true, data_test_false, dataset.self_false_sampling);
 		
+		set_relation_head.resize(set_entity.size());
+		set_relation_tail.resize(set_relation.size());
 		prob_head.resize(set_entity.size());
 		prob_tail.resize(set_entity.size());
 		for(auto i=data_train.begin(); i!=data_train.end(); ++i)

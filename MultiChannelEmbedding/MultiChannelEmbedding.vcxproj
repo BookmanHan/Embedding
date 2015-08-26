@@ -239,6 +239,7 @@
       <OpenMP>GenerateParallelCode</OpenMP>
       <Cpp0xSupport>true</Cpp0xSupport>
       <AdditionalOptions> /Qopenmp -I"%MKLROOT%"/include %(AdditionalOptions)</AdditionalOptions>
+      <OffloadOpenMPTarget>HOSTTarget</OffloadOpenMPTarget>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -408,10 +409,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataModel.hpp" />
+    <ClInclude Include="DetailedConfig.hpp" />
     <ClInclude Include="GeometricModel.hpp" />
     <ClInclude Include="Import.hpp" />
     <ClInclude Include="Model.hpp" />
-    <ClInclude Include="Embedding_Geometric.hpp" />
     <ClInclude Include="ModelConfig.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

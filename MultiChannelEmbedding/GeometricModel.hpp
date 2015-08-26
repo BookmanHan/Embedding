@@ -26,6 +26,10 @@ public:
 		:Model(dataset, task_type, logging_base_path), 
 		dim(dim), alpha(alpha), training_threshold(training_threshold)
 	{
+		logging.record()<<"\t[Dimension]\t"<<dim;
+		logging.record()<<"\t[Learning Rate]\t"<<alpha;
+		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
+
 		embedding_entity.resize(count_entity());
 		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
 
@@ -46,7 +50,8 @@ public:
 			}
 		}
 
-		record.save(filename + replace_all(data_model.relation_name_to_id[id_relation], "/", "_") + ".ppm", pgm_binary);
+		string relation_name = data_model.relation_id_to_name[id_relation];
+		record.save(filename + replace_all(relation_name, "/", "_") + ".ppm", pgm_binary);
 	}
 
 	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
@@ -134,7 +139,7 @@ public:
 		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold), 
 		ESS_factor(ESS_factor)
 	{
-		;
+		logging.record()<<"\t[ESS Factor]\t"<<ESS_factor;
 	}
 
 	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
@@ -264,7 +269,7 @@ public:
 		:TransA(dataset, task_type, logging_base_path, dim, alpha, training_threshold), 
 		ESS_factor(ESS_factor)
 	{
-		;
+		logging.record()<<"\t[ESS Factor]\t"<<ESS_factor;
 	}
 
 	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
@@ -306,6 +311,17 @@ public:
 		training_threshold(training_threshold), n_cluster(n_cluster), sparse_factor(sparse_factor),
 		single_or_total(sot)
 	{
+		logging.record()<<"\t[Dimension]\t"<<dim;
+		logging.record()<<"\t[Learning Rate]\t"<<alpha;
+		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
+		logging.record()<<"\t[Cluster Counts]\t"<<n_cluster;
+		logging.record()<<"\t[Sparsity Factor]\t"<<sparse_factor;
+
+		if (sot)
+			logging.record()<<"\t[Single or Total]\tTrue";
+		else
+			logging.record()<<"\t[Single or Total]\tFalse";
+
 		embedding_entity.resize(count_entity());
 		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
 
@@ -433,6 +449,6 @@ public:
 		if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
-		weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+		//weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
 	}
 }; 

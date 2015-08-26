@@ -4,19 +4,22 @@
 class Dataset
 {
 public:
-	const string&	base_dir;
-	const string&	training;
-	const string&	developing;
-	const string&	testing;
+	const string	base_dir;
+	const string	training;
+	const string	developing;
+	const string	testing;
+	const string	name;
 	const bool&	self_false_sampling;
 
 public:
-	Dataset(const string& base_dir,
+	Dataset(const string& name,
+		const string& base_dir,
 		const string& training,
 		const string& developing,
 		const string& testing,
 		const bool& self_false_sampling)
-		:base_dir(base_dir),
+		:name(name),
+		base_dir(base_dir),
 		training(training),
 		developing(developing),
 		testing(testing),
@@ -51,7 +54,7 @@ public:
 		ss<<setfill('0')<<setw(2)<<current_time->tm_min<<".";
 		ss<<setfill('0')<<setw(2)<<current_time->tm_sec;
 
-		fout.open((base_dir + ss.str() + ".log").c_str());
+		fout.open((base_dir + ss.str() + ".log.txt").c_str());
 		fout<<'['<<ss.str()<<']'<<'\t'<<"Starting...";
 	}
 
@@ -65,6 +68,7 @@ public:
 		ss<<setfill('0')<<setw(2)<<current_time->tm_mday<<" ";
 		ss<<setfill('0')<<setw(2)<<current_time->tm_hour<<".";
 		ss<<setfill('0')<<setw(2)<<current_time->tm_min<<".";
+		ss<<setfill('0')<<setw(2)<<current_time->tm_sec;
 
 		fout<<endl;
 		fout<<'['<<ss.str()<<']'<<'\t';

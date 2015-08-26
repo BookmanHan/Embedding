@@ -22,7 +22,17 @@ public:
 		const string& logging_base_path)
 		:data_model(dataset), task_type(task_type), logging(logging_base_path)
 	{
-		;
+		epos = 0;
+		std::cout<<"Ready"<<endl;
+
+		logging.record()<<"\t[Dataset]\t"<<dataset.name;
+		
+		if (task_type == LinkPredictionHead)
+			logging.record()<<"\t[Task]\tLink Prediction for Head.";
+		else if (task_type == LinkPredictionTail)
+			logging.record()<<"\t[Task]\tLink Prediction for Tail.";
+		else if (task_type == TripletClassification)
+			logging.record()<<"\t[Task]\tTriplets Classification.";
 	}
 
 public:
@@ -41,11 +51,14 @@ public:
 		}
 	}
 
-	void run(unsigned total_epos)
+	void run(int total_epos)
 	{
+		logging.record()<<"\t[Epos]\t"<<total_epos;
+
 		-- total_epos;
 		while(total_epos --> 0)
 		{
+			std::cout<<epos<<',';
 			train();
 		}
 
@@ -60,7 +73,14 @@ public:
 
 	void test(unsigned hit_rank = 10)
 	{
-		++ epos;
+		logging.record();
+		
+		best_triplet_result = 0;
+		best_link_mean = 1e10;
+		best_link_hitatten = 0;
+		best_link_fmean = 1e10;
+		best_link_fhitatten = 0;
+
 		if (task_type == LinkPredictionHead ||task_type == LinkPredictionTail)
 			test_link_prediction(hit_rank);
 		else
@@ -185,13 +205,12 @@ public:
 				else
 					t.first.second = j;
 
-				if (score_i < prob_triplets(t))
-					++ rmean;
-
-				if (data_model.check_data_train.find(t) != data_model.check_data_train.end())
+				if (score_i > prob_triplets(t))
 					continue;
 
-				if (score_i < prob_triplets(t))
+				++ rmean;
+
+				if (data_model.check_data_all.find(t) == data_model.check_data_all.end())
 					++ frmean;
 			}
 
@@ -235,6 +254,13 @@ public:
 	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
 	{
 		return;
+	}
+
+public:
+	~Model()
+	{
+		logging.record()<<"\t[End]";
+		logging.record();
 	}
 
 public:

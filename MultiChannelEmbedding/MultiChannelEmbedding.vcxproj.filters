@@ -10,9 +10,6 @@
     <ClInclude Include="Model.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="Embedding_Geometric.hpp">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="ModelConfig.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
@@ -23,6 +20,9 @@
       <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="GeometricModel.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DetailedConfig.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
