@@ -54,7 +54,7 @@ public:
 		ss<<setfill('0')<<setw(2)<<current_time->tm_min<<".";
 		ss<<setfill('0')<<setw(2)<<current_time->tm_sec;
 
-		fout.open((base_dir + ss.str() + ".log.txt").c_str());
+		fout.open((base_dir + ss.str() + ".log").c_str());
 		fout<<'['<<ss.str()<<']'<<'\t'<<"Starting...";
 	}
 
@@ -85,6 +85,7 @@ public:
 
 	~ModelLogging()
 	{
+		fout<<endl;
 		fout.close();
 	}
 };
