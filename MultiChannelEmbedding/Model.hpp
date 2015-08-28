@@ -259,7 +259,6 @@ public:
 public:
 	~Model()
 	{
-		logging.record()<<"\t[End]";
 		logging.record();
 	}
 

@@ -295,6 +295,7 @@ protected:
 	const bool			single_or_total;
 	const double			training_threshold;
 	const unsigned			dim;
+	const bool			be_weight_normalized;
 
 public:
 	TransM(
@@ -306,17 +307,24 @@ public:
 		double training_threshold,
 		int n_cluster,  
 		double sparse_factor, 
-		bool sot=true)
+		bool sot = true,
+		bool be_weight_normalized = false )
 		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha),
 		training_threshold(training_threshold), n_cluster(n_cluster), sparse_factor(sparse_factor),
-		single_or_total(sot)
+		single_or_total(sot), be_weight_normalized(be_weight_normalized)
 	{
+		logging.record()<<"\t[Name]\tTransM";
 		logging.record()<<"\t[Dimension]\t"<<dim;
 		logging.record()<<"\t[Learning Rate]\t"<<alpha;
 		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
 		logging.record()<<"\t[Cluster Counts]\t"<<n_cluster;
 		logging.record()<<"\t[Sparsity Factor]\t"<<sparse_factor;
-
+		
+		if (be_weight_normalized)
+			logging.record()<<"\t[Weight Normalized]\tTrue";
+		else
+			logging.record()<<"\t[Weight Normalized]\tFalse";
+		
 		if (sot)
 			logging.record()<<"\t[Single or Total]\tTrue";
 		else
@@ -449,6 +457,7 @@ public:
 		if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
-		//weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+		if (be_weight_normalized)
+			weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
 	}
 }; 
