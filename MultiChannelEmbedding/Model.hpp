@@ -23,6 +23,7 @@ public:
 		:data_model(dataset), task_type(task_type), logging(logging_base_path)
 	{
 		epos = 0;
+		best_triplet_result = 0;
 		std::cout<<"Ready"<<endl;
 
 		logging.record()<<"\t[Dataset]\t"<<dataset.name;
@@ -60,6 +61,9 @@ public:
 		{
 			std::cout<<epos<<',';
 			train();
+
+			if (task_type == TripletClassification)
+				test_triplet_classification();
 		}
 
 		train(true);
@@ -75,7 +79,6 @@ public:
 	{
 		logging.record();
 		
-		best_triplet_result = 0;
 		best_link_mean = 1e10;
 		best_link_hitatten = 0;
 		best_link_fmean = 1e10;
@@ -150,8 +153,8 @@ public:
 					++ real_hit, ++ lreal_hit;
 			}
 
-			logging.record()<<data_model.relation_id_to_name[r]<<'\t'
-				<<lreal_hit/lreal_total;
+			//logging.record()<<data_model.relation_id_to_name.at(r)<<"\t"
+			//	<<lreal_hit/lreal_total;
 		}
 
 		std::cout<<epos<<"\t Accuracy = "
@@ -256,6 +259,12 @@ public:
 		return;
 	}
 
+	virtual void draw(const string& filename, const unsigned radius, 
+		const unsigned id_head, const unsigned id_relation) const
+	{
+		return;
+	}
+
 public:
 	~Model()
 	{
@@ -271,5 +280,10 @@ public:
 	unsigned count_relation() const
 	{
 		return data_model.set_relation.size();
+	}
+	
+	const DataModel& get_data_model() const
+	{
+		return data_model;
 	}
 };
