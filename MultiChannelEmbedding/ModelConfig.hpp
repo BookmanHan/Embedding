@@ -33,8 +33,35 @@ enum TaskType
 {
 	LinkPredictionHead,
 	LinkPredictionTail, 
-	TripletClassification
+	TripletClassification,
+	DrawEmbedding,
+	TransA_ReportWeightes,
+	TransM_ReportClusterNumber,
+	TransM_ReportDetailedClusterLabel
 };
+
+inline string TaskTypeName(TaskType task_type)
+{
+	switch(task_type)
+	{
+	case LinkPredictionHead:
+		return "LinkPredictionHead";
+	case LinkPredictionTail:
+		return "LinkPredictionTail";
+	case TripletClassification:
+		return "TripletsClassification";
+	case DrawEmbedding:
+		return "DrawEmbedding";
+	case TransA_ReportWeightes:
+		return "Report.TransA.Weightes";
+	case TransM_ReportClusterNumber:
+		return "Report.TransM.ClusterNumber";
+	case TransM_ReportDetailedClusterLabel:
+		return "Report.TransM.ClusterLabel";
+	}
+
+	return "Error.TaskType";
+}
 
 class ModelLogging
 {

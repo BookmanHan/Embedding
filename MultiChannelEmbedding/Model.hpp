@@ -27,13 +27,7 @@ public:
 		std::cout<<"Ready"<<endl;
 
 		logging.record()<<"\t[Dataset]\t"<<dataset.name;
-		
-		if (task_type == LinkPredictionHead)
-			logging.record()<<"\t[Task]\tLink Prediction for Head.";
-		else if (task_type == LinkPredictionTail)
-			logging.record()<<"\t[Task]\tLink Prediction for Tail.";
-		else if (task_type == TripletClassification)
-			logging.record()<<"\t[Task]\tTriplets Classification.";
+		logging.record()<<TaskTypeName(task_type);
 	}
 
 public:
@@ -153,8 +147,8 @@ public:
 					++ real_hit, ++ lreal_hit;
 			}
 
-			//logging.record()<<data_model.relation_id_to_name.at(r)<<"\t"
-			//	<<lreal_hit/lreal_total;
+			logging.record()<<data_model.relation_id_to_name.at(r)<<"\t"
+				<<lreal_hit/lreal_total;
 		}
 
 		std::cout<<epos<<"\t Accuracy = "
@@ -265,6 +259,10 @@ public:
 		return;
 	}
 
+	virtual void report(const string& filename) const
+	{
+		return;
+	}
 public:
 	~Model()
 	{

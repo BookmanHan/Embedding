@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cctype>
 #include <iomanip>
+#include <bitset>
 
 using namespace std;
 using namespace arma;

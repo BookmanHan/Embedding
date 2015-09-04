@@ -26,6 +26,7 @@ public:
 		:Model(dataset, task_type, logging_base_path), 
 		dim(dim), alpha(alpha), training_threshold(training_threshold)
 	{
+		logging.record()<<"\t[Name]\tTransE";
 		logging.record()<<"\t[Dimension]\t"<<dim;
 		logging.record()<<"\t[Learning Rate]\t"<<alpha;
 		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
@@ -39,14 +40,22 @@ public:
 
 	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
 	{
-		mat	record(radius*6.0 +4, radius*6.0 + 4);
+		mat	record(radius*6.0 + 10, radius*6.0 + 10);
 		record.fill(255);
 		for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
 		{
 			if (i->second == id_relation)
 			{
-				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0] - embedding_relation[i->second][0]), 
-					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1] - embedding_relation[i->second][1])) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]), 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1])) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) + 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) + 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) + 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) - 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) - 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) + 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) - 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) - 1) = 0;
 			}
 		}
 
@@ -194,6 +203,7 @@ public:
 		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold), 
 		ESS_factor(ESS_factor)
 	{
+		logging.record()<<"\t[Name]\tTransE_ESS";
 		logging.record()<<"\t[ESS Factor]\t"<<ESS_factor;
 	}
 
@@ -222,6 +232,7 @@ public:
 		double training_threshold)
 		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold)
 	{
+		logging.record()<<"\t[Name]\tTransA";
 		mat_r.resize(count_relation());
 		for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 	}
@@ -280,7 +291,7 @@ public:
 	{
 		TransE::train(alpha);
 
-		if ( last_time )
+		if ( last_time || task_type == TripletClassification)
 		{
 			for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
 			for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
@@ -304,6 +315,32 @@ public:
 			for_each(mat_r.begin(), mat_r.end(), [=](mat& elem){elem = normalise(elem);});
 		}
 	}
+
+	virtual void report( const string& filename ) const
+	{
+		if (task_type == TransA_ReportWeightes)
+		{
+			for(auto i=mat_r.begin(); i!=mat_r.end(); ++i)
+			{
+				cout<<data_model.relation_id_to_name[i-mat_r.begin()]<<":";
+
+				vector<double> weights;
+				double total = 0;
+				mat mat_l, mat_u;
+				lu(mat_l, mat_u, *i);
+				for(auto i=0; i<dim; ++i)
+				{
+					weights.push_back(mat_u(i, i));
+					total += mat_u(i, i);
+				}
+				sort(weights.begin(), weights.end());
+				cout<<weights.back()<<",";
+				cout<<weights[dim/2]<<",";
+				cout<<total;
+				cout<<endl;
+			}
+		}
+	}
 };
 
 class TransA_ESS
@@ -324,6 +361,7 @@ public:
 		:TransA(dataset, task_type, logging_base_path, dim, alpha, training_threshold), 
 		ESS_factor(ESS_factor)
 	{
+		logging.record()<<"\t[Name]\tTransA_ESS";
 		logging.record()<<"\t[ESS Factor]\t"<<ESS_factor;
 	}
 
@@ -436,6 +474,31 @@ public:
 		return mixed_prob;
 	}
 
+	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	{
+		mat	record(radius*6.0 + 10, radius*6.0 + 10);
+		record.fill(255);
+		for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
+		{
+			if (i->second == id_relation)
+			{
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]), 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1])) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) + 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) + 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) + 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) - 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) - 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) + 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) - 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) - 1) = 0;
+			}
+		}
+
+		string relation_name = data_model.relation_id_to_name[id_relation];
+		record.save(filename + replace_all(relation_name, "/", "_") + ".ppm", pgm_binary);
+	}
+
 	virtual void train_cluster_once(	
 		const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
 		const pair<pair<unsigned, unsigned>,unsigned>& triplet_f, 
@@ -514,5 +577,56 @@ public:
 
 		if (be_weight_normalized)
 			weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+	}
+
+public:
+	virtual void report(const string& filename) const
+	{
+		if (task_type == TransM_ReportClusterNumber)
+		{
+			vector<unsigned>	count_cluster(n_cluster);
+			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
+			{
+				unsigned n = 0;
+				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
+				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
+			}
+			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<unsigned>(cout, "\n"));
+			return;
+		}
+		else if (task_type == TransM_ReportDetailedClusterLabel)
+		{
+			vector<bitset<32>>	counts_component(count_relation());
+			ofstream fout(filename.c_str());
+			for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
+			{
+				unsigned pos_cluster = 0;
+				double	mixed_prob = 1e-8;
+				for(int c=0; c<n_cluster; ++c)
+				{
+					vec error_c = embedding_entity[i->first.first] 
+					+ embedding_clusters[i->second][c]
+					- embedding_entity[i->first.second];
+					if (mixed_prob < exp(-sum(abs(error_c))))
+					{
+						pos_cluster = c;
+						mixed_prob = exp(-sum(abs(error_c)));
+					}
+				}
+
+				counts_component[i->second][pos_cluster] = 1;
+				fout<<data_model.entity_id_to_name[i->first.first]<<'\t';
+				fout<<data_model.relation_id_to_name[i->second]<<"=="<<pos_cluster<<'\t';
+				fout<<data_model.entity_id_to_name[i->first.second]<<'\t';
+				fout<<endl;
+			}
+			fout.close();
+
+			for(auto i=0; i!=counts_component.size(); ++i)
+			{
+				fout<<data_model.relation_id_to_name[i]<<":";
+				fout<<counts_component[i].count()<<endl;
+			}
+		}
 	}
 }; 

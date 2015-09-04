@@ -48,7 +48,8 @@ public:
 public:
 	map<unsigned, map<unsigned, vector<unsigned> > >     rel_heads;
 	map<unsigned, map<unsigned, vector<unsigned> > >     rel_tails;
-
+	map<pair<unsigned, unsigned>, unsigned>		     rel_finder;
+	
 public:
 	DataModel(const Dataset& dataset)
 	{
@@ -140,16 +141,19 @@ public:
 			if (entity_name_to_id.find(head) == entity_name_to_id.end())
 			{
 				entity_name_to_id.insert(make_pair(head, entity_name_to_id.size()));
+				entity_id_to_name.push_back(head);
 			}
 
 			if (entity_name_to_id.find(tail) == entity_name_to_id.end())
 			{
 				entity_name_to_id.insert(make_pair(tail, entity_name_to_id.size()));
+				entity_id_to_name.push_back(tail);
 			}
 
 			if (relation_name_to_id.find(relation) == relation_name_to_id.end())
 			{
 				relation_name_to_id.insert(make_pair(relation, relation_name_to_id.size()));
+				relation_id_to_name.push_back(relation);
 			}
 
 			data_train.push_back(make_pair(
@@ -173,6 +177,8 @@ public:
 				.push_back(entity_name_to_id[tail]);
 			rel_tails[relation_name_to_id[relation]][entity_name_to_id[tail]]
 				.push_back(entity_name_to_id[head]);
+			rel_finder[make_pair(entity_name_to_id[head], entity_name_to_id[tail])]
+				= relation_name_to_id[relation];
 		}
 
 		fin.close();
