@@ -585,13 +585,18 @@ public:
 		if (task_type == TransM_ReportClusterNumber)
 		{
 			vector<unsigned>	count_cluster(n_cluster);
+			double		total_number = 0;
 			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
 			{
 				unsigned n = 0;
 				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
 				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
+				++ count_cluster[n];
+				total_number += n;
 			}
 			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<unsigned>(cout, "\n"));
+			cout<<total_number/count_relation()<<endl;
+			cout<<total_number<<endl;
 			return;
 		}
 		else if (task_type == TransM_ReportDetailedClusterLabel)

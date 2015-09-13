@@ -25,6 +25,9 @@
     <ClInclude Include="DetailedConfig.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="OrbitModel.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Embedding.cpp">

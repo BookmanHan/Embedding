@@ -216,6 +216,18 @@ public:
 				if (frmean < hit_rank)
 					++ arr_mean[data_model.relation_type[i->second]];
 
+				//if (frmean > 30000)
+				//{
+				//	if (data_model.set_relation_tail[i->second].find(i->first.second)
+				//		== data_model.set_relation_tail[i->second].end())
+				//		cout<<"B"<<endl;
+				//	else if (data_model.set_relation_head[i->second].find(i->first.first)
+				//		== data_model.set_relation_head[i->second].end())
+				//		cout<<"B"<<endl;
+				//	else
+				//		cout<<"A"<<endl;
+				//}
+
 				mean += rmean;
 				fmean += frmean;
 				if (rmean < hit_rank)

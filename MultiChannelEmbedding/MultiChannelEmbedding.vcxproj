@@ -416,6 +416,7 @@
     <ClInclude Include="Import.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="ModelConfig.hpp" />
+    <ClInclude Include="OrbitModel.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

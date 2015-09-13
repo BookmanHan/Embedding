@@ -259,4 +259,31 @@ public:
 				return;
 		}
 	}
+
+	void sample_false_triplet_relation(	
+		const pair<pair<unsigned,unsigned>,unsigned>& origin,
+		pair<pair<unsigned,unsigned>,unsigned>& triplet) const
+	{
+
+		double prob = relation_hpt[origin.second]/(relation_hpt[origin.second] + relation_tph[origin.second]);
+
+		triplet = origin;
+		while(true)
+		{
+			if(rand()%1000 < 1000 * prob)
+			{
+				triplet.first.second = rand()%set_entity.size();
+			}
+			else
+			{
+				triplet.first.first = rand()%set_entity.size();
+			}
+
+			if (rand()%100 > 90)
+				triplet.second = rand()%set_relation.size();
+
+			if (check_data_train.find(triplet) == check_data_train.end())
+				return;
+		}
+	}
 };
