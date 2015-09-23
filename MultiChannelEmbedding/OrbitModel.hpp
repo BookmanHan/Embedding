@@ -137,11 +137,11 @@ public:
 	}
 };
 
-class OrbitConic
+class OrbitHyper
 	:public OrbitModel
 {
 public:
-	OrbitConic(	
+	OrbitHyper(	
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
@@ -163,8 +163,8 @@ public:
 		vec& relation = embedding_relation[triplet.second];
 		double& orbit = embedding_orbit[triplet.second];
 		
-		return - fabs(fabs(sum(abs(head-relation)) - sum(abs(tail-relation)))
-			- orbit * orbit);
+		return - fabs(sum(abs(head - relation * head.t() * relation - tail))
+			- orbit*orbit);
 	}
 
 	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
@@ -185,23 +185,23 @@ public:
 		vec& relation_f = embedding_relation[triplet_f.second];
 
 		double factor = 
-			- sign(fabs(sum(abs(head-relation)) - sum(abs(tail-relation)))
-			- orbit * orbit);
-		double factor_first =
-			sign(sum(abs(head-relation)) - sum(abs(tail-relation)));
+			- sign(sum(abs(head - relation * head.t() * relation - tail))
+			- orbit*orbit);
 		double factor_f = 
-			- sign(fabs(sum(abs(head_f-relation_f)) - sum(abs(tail_f-relation_f)))
-			- orbit * orbit);
-		double factor_first_f =
-			sign(sum(abs(head_f-relation_f)) - sum(abs(tail_f-relation_f)));
+			- sign(sum(abs(head_f - relation_f * head_f.t() * relation_f - tail_f))
+			- orbit*orbit);
 
-		head += alpha * factor * factor_first * sign(head-relation);
-		tail -= alpha * factor * factor_first * sign(tail-relation);
-		relation += alpha * factor * factor_first * (sign(relation-head)-sign(relation-tail));
-		head_f -= alpha * factor_f * factor_first_f * sign(head_f-relation_f);
-		tail_f += alpha * factor_f * factor_first_f * sign(tail_f-relation_f);
-		relation_f -= alpha * factor_f * factor_first_f * (sign(relation_f-head_f)-sign(relation_f-tail_f));
-		orbit -= alpha *(factor - factor_f)*orbit;
+		head += alpha * factor * (eye(dim, dim)-relation *relation.t())
+			* sign(head - relation * head.t() * relation - tail);
+		tail -= alpha * factor * sign(head - relation * head.t() * relation - tail);
+		relation -= alpha * factor * (eye(dim, dim)* as_scalar(head.t()*relation) + relation*head.t())
+			* sign(head - relation * head.t() * relation - tail);
+		head_f -= alpha * factor_f * (eye(dim, dim)-relation_f *relation_f.t())
+			* sign(head_f - relation_f * head_f.t() * relation_f - tail_f);
+		tail_f += alpha * factor_f * sign(head_f - relation_f * head_f.t() * relation_f - tail_f);
+		relation_f += alpha * factor_f * (eye(dim, dim)* as_scalar(head_f.t()*relation_f) + relation_f*head_f.t())
+			* sign(head_f - relation_f * head_f.t() * relation - tail_f);
+		orbit -= alpha *(factor - factor_f) * orbit;
 
 		if (norm(head) > 1.0)
 			head = normalise(head);
@@ -238,7 +238,7 @@ public:
 		:OrbitE(dataset, task_type, logging_base_path, 
 		dim, alpha, training_threshold), ESS_factor(ESS_factor)
 	{
-		logging.record()<<"\t[Name]\tOrbitE";
+		logging.record()<<"\t[Name]\tOrbitE_ESS";
 	}
 
 public:
@@ -246,7 +246,7 @@ public:
 	{
 		OrbitE::train_triplet(triplet);
 		relation_reg(triplet.second, rand()%count_relation(), ESS_factor);
-		entity_reg(triplet.first.first, rand()%count_entity(), ESS_factor);
-		entity_reg(triplet.first.second, rand()%count_entity(), ESS_factor);
+		//entity_reg(triplet.first.first, rand()%count_entity(), ESS_factor);
+		//entity_reg(triplet.first.second, rand()%count_entity(), ESS_factor);
 	}
 };

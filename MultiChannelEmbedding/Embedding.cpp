@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 	omp_set_num_threads(6); 
 	
 	Model*	model = nullptr;
-	model = new OrbitE_ESS(FB15K, LinkPredictionTail, report_path, 50, 0.001, 1.0, 0.2);
+	model = new OrbitHyper(WN18, LinkPredictionTail, report_path, 50, 0.001, 1.0);
 	model->run(500);
 	model->test(1);
 	delete model;
