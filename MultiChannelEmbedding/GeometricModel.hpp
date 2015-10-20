@@ -64,14 +64,17 @@ public:
 	}
 
 	virtual void draw(const string& filename, const unsigned radius, 
-		unsigned int id_head, unsigned int id_relation) const
+		unsigned int id_head, unsigned int id_relation)
 	{
 		mat	record(radius*6.0 +4, radius*6.0 + 4);
 		record.fill(255);
-		for(auto i=data_model.rel_heads.at(id_relation).at(id_head).begin();
-			i!=data_model.rel_heads.at(id_relation).at(id_head).end();
+		for(auto i=data_model.rel_tails.at(id_relation).at(id_head).begin();
+			i!=data_model.rel_tails.at(id_relation).at(id_head).end();
 			++ i)
 		{
+			if (rand()%100 < 80)
+				continue;
+
 			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]), 
 				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1])) = 0;
 			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 1, 
@@ -90,32 +93,77 @@ public:
 				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 2) = 0;
 			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 2, 
 				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 2) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 3, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 3) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 3, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 3) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 3, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 3) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 3, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 3) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 4, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 4) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 4, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 4) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 4, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 4) = 0;
+			record(radius * (3.0 + embedding_entity[*i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 4, 
+				radius *(3.0 + embedding_entity[*i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 4) = 0;
 		}
 
-		for(auto j=0; j<25; ++j)
+		auto changes = make_pair(make_pair(id_head, id_head), id_relation);
+		priority_queue<pair<double, int>>	heap_entity;
+		for(auto i=0; i<count_entity(); ++i)
 		{
-			int i = rand()%count_entity();
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]), 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1])) = 255;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 1) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 1) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 1) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 1) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 2) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 2) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 2) = 0;
-			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 1, 
-				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 2) = 0;
+			changes.first.first = i;
+			heap_entity.push(make_pair(prob_triplets(changes), i));
 		}
 
-		record.save("D:\\1.ppm", pgm_binary);
+		for(auto j=0; j<40; ++j)
+		{
+			unsigned i = heap_entity.top().second;
+			int t=100;
+			while(t--)
+				heap_entity.pop();
+
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]), 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1])) = 1;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 1, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 1) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 1, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 1) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 2, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 2) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 2, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 2) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 3, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 3) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 3, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 3) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 4, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) + 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 4) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 4, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) - 0) = 0;
+			record(radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] - embedding_relation[id_relation][0]) - 0, 
+				radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] - embedding_relation[id_relation][1]) + 4) = 0;
+
+		}
+
+		record.save(filename, pgm_binary);
 	}
 
 	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
@@ -216,6 +264,90 @@ public:
 	}
 };
 
+class TransH
+	:public TransE
+{
+protected:
+	vector<vec>	embedding_weights;
+
+public:
+	TransH(	const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		unsigned dim,
+		double alpha,
+		double training_threshold)
+		:TransE(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold)
+	{
+		logging.record()<<"\t[Name]\tTransH";
+		logging.record()<<"\t[Dimension]\t"<<dim;
+		logging.record()<<"\t[Learning Rate]\t"<<alpha;
+		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
+
+		embedding_weights.resize(count_relation());
+		for_each(embedding_weights.begin(), embedding_weights.end(), [=](vec& elem){elem = randu(dim,1);});
+	}
+
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	{
+		vec error = embedding_entity[triplet.first.first] 
+		- as_scalar(embedding_weights[triplet.second].t() * embedding_entity[triplet.first.first]) * embedding_weights[triplet.second]
+		+ embedding_relation[triplet.second]
+		- embedding_entity[triplet.first.second]
+		+ as_scalar(embedding_weights[triplet.second].t() * embedding_entity[triplet.first.second]) * embedding_weights[triplet.second];
+
+		return - sum(abs(error));
+	}
+
+	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		vec factor_true = sign(head - as_scalar(weight.t()*head)*weight + relation - tail + as_scalar(weight.t()*tail)*weight);
+		vec factor_false = sign(head_f - as_scalar(weight.t()*head_f)*weight + relation - tail_f + as_scalar(weight.t()*tail_f)*weight);
+
+		head -= alpha * (eye(dim, dim) - weight * weight.t()) * factor_true;
+		tail += alpha * (eye(dim, dim) - weight * weight.t()) * factor_true;
+		relation -= alpha * factor_true;
+		head_f += alpha * (eye(dim, dim) - weight * weight.t()) * factor_false;
+		tail_f -= alpha * (eye(dim, dim) - weight * weight.t()) * factor_false;
+		relation_f += alpha * factor_false;
+		weight += 2 * alpha * (factor_true * as_scalar(head.t()*weight) - factor_false * as_scalar(tail.t()*weight));
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+
+		if (norm(weight) > 1.0)
+			weight = normalise(weight);
+	}
+
+};
 class TransA
 	:public TransE
 {

@@ -7,13 +7,21 @@
 
 int main(int argc, char* argv[])
 {
-	omp_set_num_threads(6); 
+	omp_set_num_threads(6);
 	
 	Model*	model = nullptr;
-	model = new OrbitHyper(WN18, LinkPredictionTail, report_path, 50, 0.001, 1.0);
+	model = new OrbitE(Wordnet, LinkPredictionTail, report_path, 100, 0.0001, 10.0);
 	model->run(500);
 	model->test(1);
 	delete model;
+
+	//Model*	model = nullptr;
+	//model = new OrbitE2(Freebase, DrawEmbedding, report_path, 2, 0.01, 10.0);
+	////model = new TransE(Freebase, DrawEmbedding, report_path, 2, 0.01, 1.0);
+	//model->run(100);
+	//model->draw("D:\\OrbitE.philosopher.profession.big.ppm", 500, model->get_data_model().entity_name_to_id.at("philosopher"), 
+	//	model->get_data_model().relation_name_to_id.at("profession"));
+	//delete model;
 
 	//DataModel dm(FB15K);
 	//ModelLogging	log("F:\\");

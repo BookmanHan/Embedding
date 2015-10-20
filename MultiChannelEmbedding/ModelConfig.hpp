@@ -9,7 +9,7 @@ public:
 	const string	developing;
 	const string	testing;
 	const string	name;
-	const bool&	self_false_sampling;
+	const bool	self_false_sampling;
 
 public:
 	Dataset(const string& name,
@@ -33,6 +33,7 @@ enum TaskType
 {
 	LinkPredictionHead,
 	LinkPredictionTail, 
+	LinkPredictionRelation,
 	TripletClassification,
 	DrawEmbedding,
 	TransA_ReportWeightes,
@@ -58,6 +59,8 @@ inline string TaskTypeName(TaskType task_type)
 		return "Report.TransM.ClusterNumber";
 	case TransM_ReportDetailedClusterLabel:
 		return "Report.TransM.ClusterLabel";
+	case LinkPredictionRelation:
+		return "LinkPredictionRelation";
 	}
 
 	return "Error.TaskType";

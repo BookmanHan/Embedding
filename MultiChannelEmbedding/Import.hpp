@@ -14,6 +14,7 @@
 #include <cctype>
 #include <iomanip>
 #include <bitset>
+#include <queue>
 
 using namespace std;
 using namespace arma;

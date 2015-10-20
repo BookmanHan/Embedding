@@ -78,7 +78,7 @@ public:
 		best_link_fmean = 1e10;
 		best_link_fhitatten = 0;
 
-		if (task_type == LinkPredictionHead ||task_type == LinkPredictionTail)
+		if (task_type == LinkPredictionHead || task_type == LinkPredictionTail || task_type == LinkPredictionRelation)
 			test_link_prediction(hit_rank);
 		else
 			test_triplet_classification();
@@ -190,43 +190,75 @@ public:
 				std::cout<<cnt<<',';
 			}
 
-			auto t = *i;
+			pair<pair<unsigned, unsigned>, unsigned> t = *i;
 			int frmean = 0;
 			int rmean = 0;
 			double score_i = prob_triplets(*i);
 
-			for(auto j=0; j!=data_model.set_entity.size(); ++j)
+			if (task_type == LinkPredictionRelation)
 			{
-				if (task_type == LinkPredictionHead)
-					t.first.first = j;
-				else
-					t.first.second = j;
+				for(auto j=0; j!=data_model.set_relation.size(); ++j)
+				{
+					t.second = j;
 
-				if (score_i > prob_triplets(t))
-					continue;
+					if (score_i > prob_triplets(t))
+						continue;
 
-				++ rmean;
+					++ rmean;
 
-				if (data_model.check_data_all.find(t) == data_model.check_data_all.end())
-					++ frmean;
+					if (data_model.check_data_all.find(t) == data_model.check_data_all.end())
+						++ frmean;
+				}
+			}
+			else
+			{
+				int noted = 0;
+				for(auto j=0; j!=data_model.set_entity.size(); ++j)
+				{
+					if (task_type == LinkPredictionHead)
+						t.first.first = j;
+					else
+						t.first.second = j;
+
+					if (score_i > prob_triplets(t))
+						continue;
+
+					if (data_model.check_data_all.find(t) == data_model.check_data_all.end() && 
+						prob_triplets(make_pair(make_pair(t.first.first, noted), t.second)) <= prob_triplets(t))
+					{
+						noted = j;
+					}
+
+					++ rmean;
+
+					if (data_model.check_data_all.find(t) == data_model.check_data_all.end())
+						++ frmean;
+
+					//if (frmean > hit_rank + 1)
+					//{
+					//	break;
+					//}
+				}
+
+#pragma omp critical
+				{
+					if (noted != i->first.second && noted != i->first.second)
+					{
+						logging.record();
+						logging.record()<<data_model.entity_id_to_name[i->first.first]<<" "
+							<<data_model.relation_id_to_name[i->second]<<" "
+							<<data_model.entity_id_to_name[i->first.second];
+						logging.record()<<data_model.entity_id_to_name[i->first.first]<<" "
+							<<data_model.relation_id_to_name[i->second]<<" "
+							<<data_model.entity_id_to_name[noted];
+					}
+				}
 			}
 
 #pragma omp critical
 			{
 				if (frmean < hit_rank)
 					++ arr_mean[data_model.relation_type[i->second]];
-
-				//if (frmean > 30000)
-				//{
-				//	if (data_model.set_relation_tail[i->second].find(i->first.second)
-				//		== data_model.set_relation_tail[i->second].end())
-				//		cout<<"B"<<endl;
-				//	else if (data_model.set_relation_head[i->second].find(i->first.first)
-				//		== data_model.set_relation_head[i->second].end())
-				//		cout<<"B"<<endl;
-				//	else
-				//		cout<<"A"<<endl;
-				//}
 
 				mean += rmean;
 				fmean += frmean;
@@ -266,7 +298,7 @@ public:
 	}
 
 	virtual void draw(const string& filename, const unsigned radius, 
-		const unsigned id_head, const unsigned id_relation) const
+		const unsigned id_head, const unsigned id_relation)
 	{
 		return;
 	}
