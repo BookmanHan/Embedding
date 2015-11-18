@@ -243,6 +243,10 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <AdditionalOptions> /Qopenmp -I"%MKLROOT%"/include %(AdditionalOptions)</AdditionalOptions>
       <OffloadOpenMPTarget>HOSTTarget</OffloadOpenMPTarget>
+      <OptimizeForWindowsApplication>true</OptimizeForWindowsApplication>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableMatrixMultiplyLibraryCall>Default</EnableMatrixMultiplyLibraryCall>
+      <Parallelization>true</Parallelization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -418,6 +422,9 @@
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="ModelConfig.hpp" />
     <ClInclude Include="OrbitModel.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

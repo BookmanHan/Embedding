@@ -1,4 +1,10 @@
 Thumbs.db
+*.cd
+*.lastbuildstate
+*.manifest
+*.gitignore
+*.log
+*.tlog
 *.obj
 *.exe
 *.pdb
@@ -29,3 +35,6 @@ _ReSharper*/
 [Tt]est[Rr]esult*
 *.vssscc
 $tf*/
+
+#ignore thumbnails created by windows
+#Ignore files build by Visual Studio
