@@ -5,14 +5,21 @@
 #include "OrbitModel.hpp"
 #include <omp.h>
 
+//TransE-100-57%
+//TransE-500-89%
 int main(int argc, char* argv[])
 {
-	//omp_set_num_threads(6);
-	
+	omp_set_num_threads(6);
+
 	Model*	model = nullptr;
-	//model = new TransE(WN18, LinkPredictionTail, report_path, 50, 0.001, 3.0);
-	model = new TransG(WN18, LinkPredictionTail, report_path, 50, 0.001, exp(0.2), 2, 0.2);
-	model->run(500);
+	//model = new TransE(FB15K, LinkPredictionTail, report_path, 400, 0.001, 3.0);
+	model = new TransG(WN11, TripletClassification, report_path, 400, 0.001, 3.0, 1, 0.5, 1);
+	model->run(5000);
+	model->test();
+	delete model;
+
+	model = new TransG(WN18, LinkPredictionTail, report_path, 400, 0.001, exp(3.5), 1, 0.1, 10);
+	model->run(5000);
 	model->test();
 	delete model;
 

@@ -911,11 +911,15 @@ protected:
 protected:
 	const int				n_cluster;
 	const double			alpha;
-	const double			CRP_factor;
 	const bool				single_or_total;
 	const double			training_threshold;
 	const unsigned			dim;
 	const bool				be_weight_normalized;
+	const unsigned			step_before;
+	const double			normalizor;
+
+protected:
+	double			CRP_factor;
 
 public:
 	TransG(
@@ -927,11 +931,13 @@ public:
 		double training_threshold,
 		int n_cluster,  
 		double CRP_factor, 
+		unsigned step_before = 10,
 		bool sot = false,
-		bool be_weight_normalized = true )
+		bool be_weight_normalized = true)
 		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha),
 		training_threshold(training_threshold), n_cluster(n_cluster), CRP_factor(CRP_factor),
-		single_or_total(sot), be_weight_normalized(be_weight_normalized)
+		single_or_total(sot), be_weight_normalized(be_weight_normalized), step_before(step_before),
+		normalizor(1.0/pow(3.1415, dim/2))
 	{
 		logging.record()<<"\t[Name]\tTransM";
 		logging.record()<<"\t[Dimension]\t"<<dim;
@@ -956,23 +962,23 @@ public:
 		embedding_clusters.resize(count_relation());
 		for(auto &elem_vec : embedding_clusters)
 		{
-			elem_vec.resize(1000);
+			elem_vec.resize(30);
 			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = randu(dim,1);});
 		}
 
 		weights_clusters.resize(count_relation());
 		for(auto & elem_vec : weights_clusters)
 		{
-			elem_vec.resize(1000);
-			for(auto & elem : elem_vec)
+			elem_vec.resize(21);
+			elem_vec.fill(0.0);
+			for(auto i=0; i<n_cluster; ++i)
 			{
-				elem = 1.0/n_cluster;
+				elem_vec[i] = 1.0/n_cluster;
 			}
 		}
 
 		size_clusters.resize(count_relation(), n_cluster);
-
-		CRP_factor /= dataset.training.size() / count_relation(); 
+		this->CRP_factor = CRP_factor / data_model.data_train.size() * count_relation();
 	}
 
 public:
@@ -986,7 +992,8 @@ public:
 		{
 			vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
 			- embedding_entity[triplet.first.second];
-			mixed_prob = max(mixed_prob, fabs(weights_clusters[triplet.second][c]) * exp(-sum(abs(error_c))));
+			mixed_prob = max(mixed_prob, fabs(weights_clusters[triplet.second][c]) 
+				* exp(-sum(abs(error_c))));
 		}
 
 		return mixed_prob;
@@ -1046,24 +1053,21 @@ public:
 		double prob_local_false =  exp(-sum(abs(head_f + relation_f - tail_f)));
 
 		weights_clusters[triplet.second][cluster] += 
-			alpha /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
+			factor /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
 		weights_clusters[triplet_f.second][cluster] -= 
-			alpha /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
+			factor /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
 
-		weights_clusters[triplet.second][cluster] -= 
-			alpha * fabs(weights_clusters[triplet.second][cluster]);
-
-		head -= alpha * sign(head + relation - tail) 
+		head -= factor * sign(head + relation - tail) 
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
-		tail += alpha * sign(head + relation - tail)
+		tail += factor * sign(head + relation - tail)
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
-		relation -= alpha * sign(head + relation - tail)
+		relation -= factor * sign(head + relation - tail)
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]);
-		head_f += alpha * sign(head_f + relation_f - tail_f)
+		head_f += factor * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
-		tail_f -= alpha * sign(head_f + relation_f - tail_f)
+		tail_f -= factor * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false  * fabs(weights_clusters[triplet.second][cluster]);
-		relation_f += alpha * sign(head_f + relation_f - tail_f)
+		relation_f += factor * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
 
 		if (norm(relation) > 1.0)
@@ -1084,7 +1088,325 @@ public:
 		double prob_true = training_prob_triplets(triplet);
 		double prob_false = training_prob_triplets(triplet_f);
 
-		if (prob_true/prob_false > training_threshold * size_clusters[triplet.second])
+		if (prob_true/prob_false > exp(training_threshold))
+			return;
+
+		for(int c=0; c<size_clusters[triplet.second]; ++c)
+		{
+			train_cluster_once(triplet, triplet_f, c, prob_true, prob_false, alpha);
+		}
+
+		double prob_new_component = CRP_factor * exp(-sum(abs(head - tail)));
+
+		if (randu() < prob_new_component/(prob_new_component + prob_true) 
+			&& size_clusters[triplet.second] < 20
+			&& epos >= step_before)
+		{
+#pragma omp critical
+			{
+				cout<<"A";
+				weights_clusters[triplet.second][size_clusters[triplet.second]] = CRP_factor;
+				embedding_clusters[triplet.second][size_clusters[triplet.second]] = randu(dim, 1); //tail - head;
+				++ size_clusters[triplet.second];
+			}
+		}
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+
+		if (be_weight_normalized)
+			weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+	}
+
+public:
+	virtual void report(const string& filename) const
+	{
+		if (task_type == TransM_ReportClusterNumber)
+		{
+			vector<unsigned>	count_cluster(n_cluster);
+			double		total_number = 0;
+			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
+			{
+				unsigned n = 0;
+				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
+				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
+				++ count_cluster[n];
+				total_number += n;
+			}
+			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<unsigned>(cout, "\n"));
+			cout<<total_number/count_relation()<<endl;
+			cout<<total_number<<endl;
+			return;
+		}
+		else if (task_type == TransM_ReportDetailedClusterLabel)
+		{
+			vector<bitset<32>>	counts_component(count_relation());
+			ofstream fout(filename.c_str());
+			for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
+			{
+				unsigned pos_cluster = 0;
+				double	mixed_prob = 1e-8;
+				for(int c=0; c<n_cluster; ++c)
+				{
+					vec error_c = embedding_entity[i->first.first] 
+					+ embedding_clusters[i->second][c]
+					- embedding_entity[i->first.second];
+					if (mixed_prob < exp(-sum(abs(error_c))))
+					{
+						pos_cluster = c;
+						mixed_prob = exp(-sum(abs(error_c)));
+					}
+				}
+
+				counts_component[i->second][pos_cluster] = 1;
+				fout<<data_model.entity_id_to_name[i->first.first]<<'\t';
+				fout<<data_model.relation_id_to_name[i->second]<<"=="<<pos_cluster<<'\t';
+				fout<<data_model.entity_id_to_name[i->first.second]<<'\t';
+				fout<<endl;
+			}
+			fout.close();
+
+			for(auto i=0; i!=counts_component.size(); ++i)
+			{
+				fout<<data_model.relation_id_to_name[i]<<":";
+				fout<<counts_component[i].count()<<endl;
+			}
+		}
+	}
+}; 
+
+class TransG_Hiracherical
+	:public Model
+{
+protected:
+	vector<vec>				embedding_entity;
+	vector<vector<vec>>		embedding_clusters;
+	vector<vec>				weights_clusters;
+	vector<unsigned>		size_clusters;
+	vec						variance;
+
+protected:
+	const int				n_cluster;
+	const double			alpha;
+	const bool				single_or_total;
+	const double			training_threshold;
+	const unsigned			dim;
+	const bool				be_weight_normalized;
+	const unsigned			step_before;
+	const double			normalizor;
+
+protected:
+	double			CRP_factor;
+
+public:
+	TransG_Hiracherical(
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		unsigned dim,
+		double alpha,
+		double training_threshold,
+		int n_cluster,  
+		double CRP_factor, 
+		unsigned step_before = 10,
+		bool sot = false,
+		bool be_weight_normalized = true)
+		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha),
+		training_threshold(training_threshold), n_cluster(n_cluster), CRP_factor(CRP_factor),
+		single_or_total(sot), be_weight_normalized(be_weight_normalized), step_before(step_before),
+		normalizor(1.0/pow(3.1415, dim/2))
+	{
+		logging.record()<<"\t[Name]\tTransM";
+		logging.record()<<"\t[Dimension]\t"<<dim;
+		logging.record()<<"\t[Learning Rate]\t"<<alpha;
+		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
+		logging.record()<<"\t[Cluster Counts]\t"<<n_cluster;
+		logging.record()<<"\t[CRP Factor]\t"<<CRP_factor;
+
+		if (be_weight_normalized)
+			logging.record()<<"\t[Weight Normalized]\tTrue";
+		else
+			logging.record()<<"\t[Weight Normalized]\tFalse";
+
+		if (sot)
+			logging.record()<<"\t[Single or Total]\tTrue";
+		else
+			logging.record()<<"\t[Single or Total]\tFalse";
+
+		embedding_entity.resize(count_entity());
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
+
+		embedding_clusters.resize(count_relation());
+		for(auto &elem_vec : embedding_clusters)
+		{
+			elem_vec.resize(30);
+			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = randu(dim,1);});
+		}
+
+		weights_clusters.resize(count_relation());
+		for(auto & elem_vec : weights_clusters)
+		{
+			elem_vec.resize(30);
+			elem_vec.fill(0.0);
+			for(auto i=0; i<n_cluster; ++i)
+			{
+				elem_vec[i] = 1.0/n_cluster;
+			}
+		}
+
+		size_clusters.resize(count_relation(), n_cluster);
+		this->CRP_factor = CRP_factor / data_model.data_train.size() * count_relation();
+
+		variance.resize(count_entity());
+		variance.fill(1.0);
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		if (single_or_total == false)
+			return training_prob_triplets(triplet);
+
+		double total_variance = variance[triplet.first.first] * variance[triplet.first.first]
+			+ variance[triplet.first.second] * variance[triplet.first.second] + 1;
+
+		double	mixed_prob = 1e-100;
+		for(int c=0; c<size_clusters[triplet.second]; ++c)
+		{
+			vec error_c = (embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+			- embedding_entity[triplet.first.second]);
+			mixed_prob = max(mixed_prob, fabs(weights_clusters[triplet.second][c]) 
+				* exp(-as_scalar(error_c.t()*error_c)/total_variance));
+		}
+
+		return mixed_prob;
+	}
+
+	virtual double training_prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		double total_variance = variance[triplet.first.first] * variance[triplet.first.first]
+		+ variance[triplet.first.second] * variance[triplet.first.second] + 1;
+
+		double	mixed_prob = 1e-100;
+		for(int c=0; c<size_clusters[triplet.second]; ++c)
+		{
+			vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
+			- embedding_entity[triplet.first.second];
+			mixed_prob += fabs(weights_clusters[triplet.second][c]) 
+				* exp(-as_scalar(error_c.t()*error_c)/total_variance);
+		}
+
+		return mixed_prob;
+	}
+
+	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	{
+		mat	record(radius*6.0 + 10, radius*6.0 + 10);
+		record.fill(255);
+		for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
+		{
+			if (i->second == id_relation)
+			{
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]), 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1])) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) + 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) + 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) + 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) - 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) - 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) + 1) = 0;
+				record(radius * (3.0 + embedding_entity[i->first.second][0] - embedding_entity[i->first.first][0]) - 1, 
+					radius *(3.0 + embedding_entity[i->first.second][1] - embedding_entity[i->first.first][1]) - 1) = 0;
+			}
+		}
+
+		string relation_name = data_model.relation_id_to_name[id_relation];
+		record.save(filename + replace_all(relation_name, "/", "_") + ".ppm", pgm_binary);
+	}
+
+	virtual void train_cluster_once(	
+		const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
+		const pair<pair<unsigned, unsigned>,unsigned>& triplet_f, 
+		int cluster, double prob_true, double prob_false, double factor)
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_clusters[triplet.second][cluster];
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_clusters[triplet_f.second][cluster];
+
+		double total_variance = variance[triplet.first.first] * variance[triplet.first.first]
+		+ variance[triplet.first.second] * variance[triplet.first.second] + 1;
+		double total_variance_f = variance[triplet_f.first.first] * variance[triplet_f.first.first]
+		+ variance[triplet_f.first.second] * variance[triplet_f.first.second] + 1;
+		double prob_local_true =  exp(-as_scalar((head + relation - tail).t() * (head + relation - tail))
+			/total_variance);
+		double prob_local_false =  exp(-as_scalar((head_f + relation_f - tail_f).t() * (head_f + relation_f - tail_f))
+			/total_variance_f);
+
+		variance[triplet.first.first] += alpha * 2 * fabs(weights_clusters[triplet.second][cluster])
+			* prob_local_true /prob_true * as_scalar((head + relation - tail).t() * (head + relation - tail))
+			/ total_variance / total_variance * variance[triplet.first.first];
+		variance[triplet.first.second] += alpha * 2 * fabs(weights_clusters[triplet.second][cluster])
+			* prob_local_true /prob_true * as_scalar((head + relation - tail).t() * (head + relation - tail))
+			/ total_variance / total_variance * variance[triplet.first.second];
+		variance[triplet_f.first.first] -= alpha * 2 * fabs(weights_clusters[triplet_f.second][cluster])
+			* prob_local_false /prob_false * as_scalar((head_f + relation_f - tail_f).t() * (head_f + relation_f - tail_f))
+			/ total_variance_f / total_variance_f * variance[triplet_f.first.first];
+		variance[triplet_f.first.second] -= alpha * 2 * fabs(weights_clusters[triplet_f.second][cluster])
+			* prob_local_false /prob_false * as_scalar((head_f + relation_f - tail_f).t() * (head_f + relation_f - tail_f))
+			/ total_variance_f / total_variance_f * variance[triplet_f.first.second];
+
+		weights_clusters[triplet.second][cluster] += 
+			alpha /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
+		weights_clusters[triplet_f.second][cluster] -= 
+			alpha /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
+
+		head -= alpha * (head + relation - tail) 
+			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]) / total_variance;
+		tail += alpha * (head + relation - tail)
+			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]) / total_variance;
+		relation -= alpha * (head + relation - tail)
+			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]) / total_variance;
+		head_f += alpha * (head_f + relation_f - tail_f)
+			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
+		tail_f -= alpha * (head_f + relation_f - tail_f)
+			* prob_local_false/prob_false  * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
+		relation_f += alpha * (head_f + relation_f - tail_f)
+			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(relation_f) > 1.0)
+			relation_f = normalise(relation_f);
+	}
+
+	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+
+		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		double prob_true = training_prob_triplets(triplet);
+		double prob_false = training_prob_triplets(triplet_f);
+
+		if (prob_true/prob_false > training_threshold)
 			return;
 
 		vec prob_CRP(size_clusters[triplet.second]);
@@ -1097,7 +1419,9 @@ public:
 
 		double prob_new_component = CRP_factor * exp(-sum(abs(head - tail)));
 
-		if (randu() < prob_new_component/(prob_new_component + sum(prob_CRP)))
+		if (randu() < prob_new_component/(prob_new_component + sum(prob_CRP)) 
+			&& size_clusters[triplet.second] <= 20
+			&& epos >= step_before)
 		{
 #pragma omp critical
 			{
@@ -1124,7 +1448,7 @@ public:
 			tail_f = normalise(tail_f);
 
 		if (be_weight_normalized)
-			weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
+			weights_clusters[triplet.second] /= sum(weights_clusters[triplet.second]);
 	}
 
 public:

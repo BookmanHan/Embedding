@@ -234,25 +234,25 @@ public:
 					if (data_model.check_data_all.find(t) == data_model.check_data_all.end())
 						++ frmean;
 
-					//if (frmean > hit_rank + 1)
-					//{
-					//	break;
-					//}
-				}
-
-#pragma omp critical
-				{
-					if (noted != i->first.second && noted != i->first.second)
+					if (frmean > hit_rank + 1)
 					{
-						logging.record();
-						logging.record()<<data_model.entity_id_to_name[i->first.first]<<" "
-							<<data_model.relation_id_to_name[i->second]<<" "
-							<<data_model.entity_id_to_name[i->first.second];
-						logging.record()<<data_model.entity_id_to_name[i->first.first]<<" "
-							<<data_model.relation_id_to_name[i->second]<<" "
-							<<data_model.entity_id_to_name[noted];
+						break;
 					}
 				}
+
+//#pragma omp critical
+//				{
+//					if (noted != i->first.second && noted != i->first.second)
+//					{
+//						logging.record();
+//						logging.record()<<data_model.entity_id_to_name[i->first.first]<<" "
+//							<<data_model.relation_id_to_name[i->second]<<" "
+//							<<data_model.entity_id_to_name[i->first.second];
+//						logging.record()<<data_model.entity_id_to_name[i->first.first]<<" "
+//							<<data_model.relation_id_to_name[i->second]<<" "
+//							<<data_model.entity_id_to_name[noted];
+//					}
+//				}
 			}
 
 #pragma omp critical
