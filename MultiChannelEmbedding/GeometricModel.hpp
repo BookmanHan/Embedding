@@ -12,7 +12,7 @@ protected:
 	vector<vec>	embedding_relation;
 
 public:
-	const unsigned	dim;
+	const int	dim;
 	const double	alpha;
 	const double	training_threshold;
 
@@ -20,7 +20,7 @@ public:
 	TransE(	const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:Model(dataset, task_type, logging_base_path), 
@@ -38,7 +38,7 @@ public:
 		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	virtual void draw(const string& filename, const int radius, const int id_relation) const
 	{
 		mat	record(radius*6.0 + 10, radius*6.0 + 10);
 		record.fill(255);
@@ -63,8 +63,8 @@ public:
 		record.save(filename + replace_all(relation_name, "/", "_") + ".ppm", pgm_binary);
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, 
-		unsigned int id_head, unsigned int id_relation)
+	virtual void draw(const string& filename, const int radius, 
+		int id_head, int id_relation)
 	{
 		mat	record(radius*6.0 +4, radius*6.0 + 4);
 		record.fill(255);
@@ -121,7 +121,7 @@ public:
 
 		for(auto j=0; j<40; ++j)
 		{
-			unsigned i = heap_entity.top().second;
+			int i = heap_entity.top().second;
 			int t=100;
 			while(t--)
 				heap_entity.pop();
@@ -166,7 +166,7 @@ public:
 		record.save(filename, pgm_binary);
 	}
 
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		vec error = embedding_entity[triplet.first.first]
 		+ embedding_relation[triplet.second]
@@ -175,13 +175,13 @@ public:
 		return - sum(abs(error));
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
@@ -244,7 +244,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold,
 		double ESS_factor)
@@ -255,7 +255,7 @@ public:
 		logging.record()<<"\t[ESS Factor]\t"<<ESS_factor;
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		TransE::train_triplet(triplet);
 		relation_reg(triplet.second, rand()%count_relation(), ESS_factor);
@@ -274,7 +274,7 @@ public:
 	TransH(	const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:TransE(dataset, task_type, logging_base_path, 
@@ -289,7 +289,7 @@ public:
 		for_each(embedding_weights.begin(), embedding_weights.end(), [=](vec& elem){elem = randu(dim,1);});
 	}
 
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec error = embedding_entity[triplet.first.first] 
 		- as_scalar(embedding_weights[triplet.second].t() * embedding_entity[triplet.first.first]) * embedding_weights[triplet.second]
@@ -300,14 +300,14 @@ public:
 		return - sum(abs(error));
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 		vec& weight = embedding_weights[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
@@ -359,7 +359,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold)
@@ -370,7 +370,7 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		vec error = embedding_entity[triplet.first.first]
 		+ embedding_relation[triplet.second]
@@ -379,7 +379,7 @@ public:
 		return -as_scalar(abs(error).t()*mat_r[triplet.second]*abs(error));
 	}
 
-	virtual double training_prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double training_prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		vec error = embedding_entity[triplet.first.first]
 		+ embedding_relation[triplet.second]
@@ -388,13 +388,13 @@ public:
 		return - sum(abs(error));
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (training_prob_triplets(triplet) - training_prob_triplets(triplet_f) > training_threshold)
@@ -434,7 +434,7 @@ public:
 				vec& tail = embedding_entity[triplet.first.second];
 				vec& relation = embedding_relation[triplet.second];
 
-				pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+				pair<pair<int, int>,int> triplet_f;
 				data_model.sample_false_triplet(triplet, triplet_f);
 
 				vec& head_f = embedding_entity[triplet_f.first.first];
@@ -486,7 +486,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold)
@@ -497,7 +497,7 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		vec error = embedding_entity[triplet.first.first]
 		+ embedding_relation[triplet.second]
@@ -506,7 +506,7 @@ public:
 		return -as_scalar((error).t()*mat_r[triplet.second]*mat_r[triplet.second].t()*(error));
 	}
 
-	virtual double training_prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double training_prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		vec error = embedding_entity[triplet.first.first]
 		+ embedding_relation[triplet.second]
@@ -515,14 +515,14 @@ public:
 		return - sum(abs(error));
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 		mat& mat_rel = mat_r[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (training_prob_triplets(triplet) - training_prob_triplets(triplet_f) > training_threshold)
@@ -563,7 +563,7 @@ public:
 					vec& tail = embedding_entity[triplet.first.second];
 					vec& relation = embedding_relation[triplet.second];
 
-					pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+					pair<pair<int, int>,int> triplet_f;
 					data_model.sample_false_triplet(triplet, triplet_f);
 
 					vec& head_f = embedding_entity[triplet_f.first.first];
@@ -617,7 +617,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold,
 		double ESS_factor)
@@ -628,7 +628,7 @@ public:
 		logging.record()<<"\t[ESS Factor]\t"<<ESS_factor;
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		TransA::train_triplet(triplet);
 		entity_reg(triplet.first.first, rand()%count_entity(), ESS_factor);
@@ -650,7 +650,7 @@ protected:
 	const double			sparse_factor;
 	const bool				single_or_total;
 	const double			training_threshold;
-	const unsigned			dim;
+	const int			dim;
 	const bool				be_weight_normalized;
 
 public:
@@ -658,7 +658,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold,
 		int n_cluster,  
@@ -708,7 +708,7 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		if (single_or_total == false)
 			return training_prob_triplets(triplet);
@@ -724,7 +724,7 @@ public:
 		return mixed_prob;
 	}
 
-	virtual double training_prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double training_prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		double	mixed_prob = 1e-8;
 		for(int c=0; c<n_cluster; ++c)
@@ -737,7 +737,7 @@ public:
 		return mixed_prob;
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	virtual void draw(const string& filename, const int radius, const int id_relation) const
 	{
 		mat	record(radius*6.0 + 10, radius*6.0 + 10);
 		record.fill(255);
@@ -763,8 +763,8 @@ public:
 	}
 
 	virtual void train_cluster_once(	
-		const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
-		const pair<pair<unsigned, unsigned>,unsigned>& triplet_f, 
+		const pair<pair<int, int>,int>& triplet, 
+		const pair<pair<int, int>,int>& triplet_f, 
 		int cluster, double prob_true, double prob_false, double factor)
 	{
 		vec& head = embedding_entity[triplet.first.first];
@@ -798,16 +798,16 @@ public:
 		relation_f += alpha * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
 
-		if (norm(relation) > 1.0)
+		if (norm(relation, 1) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(relation_f) > 1.0)
+		if (norm(relation_f, 1) > 1.0)
 			relation_f = normalise(relation_f);
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		double prob_true = (training_prob_triplets(triplet));
@@ -847,17 +847,17 @@ public:
 	{
 		if (task_type == TransM_ReportClusterNumber)
 		{
-			vector<unsigned>	count_cluster(n_cluster);
+			vector<int>	count_cluster(n_cluster);
 			double		total_number = 0;
 			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
 			{
-				unsigned n = 0;
+				int n = 0;
 				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
 				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
 				++ count_cluster[n];
 				total_number += n;
 			}
-			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<unsigned>(cout, "\n"));
+			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<int>(cout, "\n"));
 			cout<<total_number/count_relation()<<endl;
 			cout<<total_number<<endl;
 			return;
@@ -868,7 +868,7 @@ public:
 			ofstream fout(filename.c_str());
 			for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
 			{
-				unsigned pos_cluster = 0;
+				int pos_cluster = 0;
 				double	mixed_prob = 1e-8;
 				for(int c=0; c<n_cluster; ++c)
 				{
@@ -906,16 +906,16 @@ protected:
 	vector<vec>				embedding_entity;
 	vector<vector<vec>>		embedding_clusters;
 	vector<vec>				weights_clusters;
-	vector<unsigned>		size_clusters;
+	vector<int>		size_clusters;
 
 protected:
 	const int				n_cluster;
 	const double			alpha;
 	const bool				single_or_total;
 	const double			training_threshold;
-	const unsigned			dim;
+	const int			dim;
 	const bool				be_weight_normalized;
-	const unsigned			step_before;
+	const int			step_before;
 	const double			normalizor;
 
 protected:
@@ -926,12 +926,12 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold,
 		int n_cluster,  
 		double CRP_factor, 
-		unsigned step_before = 10,
+		int step_before = 10,
 		bool sot = false,
 		bool be_weight_normalized = true)
 		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha),
@@ -982,7 +982,7 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		if (single_or_total == false)
 			return training_prob_triplets(triplet);
@@ -999,7 +999,7 @@ public:
 		return mixed_prob;
 	}
 
-	virtual double training_prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double training_prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		double	mixed_prob = 1e-100;
 		for(int c=0; c<size_clusters[triplet.second]; ++c)
@@ -1012,7 +1012,7 @@ public:
 		return mixed_prob;
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	virtual void draw(const string& filename, const int radius, const int id_relation) const
 	{
 		mat	record(radius*6.0 + 10, radius*6.0 + 10);
 		record.fill(255);
@@ -1038,8 +1038,8 @@ public:
 	}
 
 	virtual void train_cluster_once(	
-		const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
-		const pair<pair<unsigned, unsigned>,unsigned>& triplet_f, 
+		const pair<pair<int, int>,int>& triplet, 
+		const pair<pair<int, int>,int>& triplet_f, 
 		int cluster, double prob_true, double prob_false, double factor)
 	{
 		vec& head = embedding_entity[triplet.first.first];
@@ -1069,7 +1069,7 @@ public:
 			* prob_local_false/prob_false  * fabs(weights_clusters[triplet.second][cluster]);
 		relation_f += factor * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
-
+		
 		if (norm(relation) > 1.0)
 			relation = normalise(relation);
 
@@ -1077,12 +1077,15 @@ public:
 			relation_f = normalise(relation_f);
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		if (!head.is_finite())
+			cout<<"d";
+
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		double prob_true = training_prob_triplets(triplet);
@@ -1135,17 +1138,17 @@ public:
 	{
 		if (task_type == TransM_ReportClusterNumber)
 		{
-			vector<unsigned>	count_cluster(n_cluster);
+			vector<int>	count_cluster(n_cluster);
 			double		total_number = 0;
 			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
 			{
-				unsigned n = 0;
+				int n = 0;
 				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
 				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
 				++ count_cluster[n];
 				total_number += n;
 			}
-			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<unsigned>(cout, "\n"));
+			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<int>(cout, "\n"));
 			cout<<total_number/count_relation()<<endl;
 			cout<<total_number<<endl;
 			return;
@@ -1156,7 +1159,7 @@ public:
 			ofstream fout(filename.c_str());
 			for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
 			{
-				unsigned pos_cluster = 0;
+				int pos_cluster = 0;
 				double	mixed_prob = 1e-8;
 				for(int c=0; c<n_cluster; ++c)
 				{
@@ -1194,7 +1197,7 @@ protected:
 	vector<vec>				embedding_entity;
 	vector<vector<vec>>		embedding_clusters;
 	vector<vec>				weights_clusters;
-	vector<unsigned>		size_clusters;
+	vector<int>		size_clusters;
 	vec						variance;
 
 protected:
@@ -1202,9 +1205,9 @@ protected:
 	const double			alpha;
 	const bool				single_or_total;
 	const double			training_threshold;
-	const unsigned			dim;
+	const int			dim;
 	const bool				be_weight_normalized;
-	const unsigned			step_before;
+	const int			step_before;
 	const double			normalizor;
 
 protected:
@@ -1215,12 +1218,12 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold,
 		int n_cluster,  
 		double CRP_factor, 
-		unsigned step_before = 10,
+		int step_before = 10,
 		bool sot = false,
 		bool be_weight_normalized = true)
 		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha),
@@ -1274,7 +1277,7 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		if (single_or_total == false)
 			return training_prob_triplets(triplet);
@@ -1294,7 +1297,7 @@ public:
 		return mixed_prob;
 	}
 
-	virtual double training_prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual double training_prob_triplets( const pair<pair<int, int>,int>& triplet )
 	{
 		double total_variance = variance[triplet.first.first] * variance[triplet.first.first]
 		+ variance[triplet.first.second] * variance[triplet.first.second] + 1;
@@ -1311,7 +1314,7 @@ public:
 		return mixed_prob;
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	virtual void draw(const string& filename, const int radius, const int id_relation) const
 	{
 		mat	record(radius*6.0 + 10, radius*6.0 + 10);
 		record.fill(255);
@@ -1337,8 +1340,8 @@ public:
 	}
 
 	virtual void train_cluster_once(	
-		const pair<pair<unsigned, unsigned>,unsigned>& triplet, 
-		const pair<pair<unsigned, unsigned>,unsigned>& triplet_f, 
+		const pair<pair<int, int>,int>& triplet, 
+		const pair<pair<int, int>,int>& triplet_f, 
 		int cluster, double prob_true, double prob_false, double factor)
 	{
 		vec& head = embedding_entity[triplet.first.first];
@@ -1395,12 +1398,12 @@ public:
 			relation_f = normalise(relation_f);
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		double prob_true = training_prob_triplets(triplet);
@@ -1456,17 +1459,17 @@ public:
 	{
 		if (task_type == TransM_ReportClusterNumber)
 		{
-			vector<unsigned>	count_cluster(n_cluster);
+			vector<int>	count_cluster(n_cluster);
 			double		total_number = 0;
 			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
 			{
-				unsigned n = 0;
+				int n = 0;
 				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
 				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
 				++ count_cluster[n];
 				total_number += n;
 			}
-			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<unsigned>(cout, "\n"));
+			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<int>(cout, "\n"));
 			cout<<total_number/count_relation()<<endl;
 			cout<<total_number<<endl;
 			return;
@@ -1477,7 +1480,7 @@ public:
 			ofstream fout(filename.c_str());
 			for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
 			{
-				unsigned pos_cluster = 0;
+				int pos_cluster = 0;
 				double	mixed_prob = 1e-8;
 				for(int c=0; c<n_cluster; ++c)
 				{

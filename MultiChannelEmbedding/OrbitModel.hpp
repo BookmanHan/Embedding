@@ -13,7 +13,7 @@ protected:
 	vec		embedding_orbit;
 
 protected:
-	const unsigned	dim;
+	const int	dim;
 	const double	alpha;
 	const double	training_threshold;
 
@@ -22,7 +22,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:Model(dataset, task_type, logging_base_path), 
@@ -42,8 +42,8 @@ public:
 	}
 
 public:
-	virtual void draw(const string& filename, const unsigned radius, 
-		unsigned int id_head, unsigned int id_relation)
+	virtual void draw(const string& filename, const int radius, 
+		int id_head, int id_relation)
 	{
 		mat	record(radius*6.0 + 100, radius*6.0 + 100);
 		record.fill(255);
@@ -109,7 +109,7 @@ public:
 			while(t--)
 				heap_entity.pop();
 
-			unsigned i = heap_entity.top().second;
+			int i = heap_entity.top().second;
 
 			record(50 + radius * (3.0 + embedding_entity[i][0] - embedding_entity[id_head][0] + embedding_relation[id_relation][0]), 
 				50 + radius *(3.0 + embedding_entity[i][1] - embedding_entity[id_head][1] + embedding_relation[id_relation][1])) = 1;
@@ -178,7 +178,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:OrbitModel(dataset, task_type, logging_base_path, 
@@ -187,7 +187,7 @@ public:
 		logging.record()<<"\t[Name]\tOrbitE";
 	}
 
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
@@ -199,14 +199,14 @@ public:
 		return - score;
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 		double& orbit = embedding_orbit[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
@@ -254,7 +254,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:OrbitModel(dataset, task_type, logging_base_path, 
@@ -263,7 +263,7 @@ public:
 		logging.record()<<"\t[Name]\tOrbitE2";
 	}
 
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
@@ -279,14 +279,14 @@ public:
 		return - score;
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 		double& orbit = embedding_orbit[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
@@ -337,7 +337,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold)
 		:OrbitModel(dataset, task_type, logging_base_path, 
@@ -348,7 +348,7 @@ public:
 	}
 
 public:
-	virtual double prob_triplets( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
@@ -359,14 +359,14 @@ public:
 			- orbit*orbit);
 	}
 
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet ) 
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
 	{  
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
 		double& orbit = embedding_orbit[triplet.second];
 
-		pair<pair<unsigned, unsigned>,unsigned> triplet_f;
+		pair<pair<int, int>,int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
@@ -423,7 +423,7 @@ public:
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
-		unsigned dim,
+		int dim,
 		double alpha,
 		double training_threshold,
 		double ESS_factor)
@@ -434,7 +434,7 @@ public:
 	}
 
 public:
-	virtual void train_triplet( const pair<pair<unsigned, unsigned>,unsigned>& triplet )
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
 	{
 		OrbitE::train_triplet(triplet);
 		relation_reg(triplet.second, rand()%count_relation(), ESS_factor);

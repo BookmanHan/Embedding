@@ -14,7 +14,7 @@ protected:
 	ModelLogging		logging;
 
 public:
-	unsigned	epos;
+	int	epos;
 
 public:
 	Model(	const Dataset& dataset,
@@ -31,8 +31,8 @@ public:
 	}
 
 public:
-	virtual double prob_triplets(const pair<pair<unsigned, unsigned>,unsigned>& triplet) = 0;
-	virtual void train_triplet(const pair<pair<unsigned, unsigned>,unsigned>& triplet) = 0;
+	virtual double prob_triplets(const pair<pair<int, int>,int>& triplet) = 0;
+	virtual void train_triplet(const pair<pair<int, int>,int>& triplet) = 0;
 
 public:
 	virtual void train(bool last_time = false)
@@ -69,7 +69,7 @@ public:
 	double		best_link_fmean;
 	double		best_link_fhitatten;
 
-	void test(unsigned hit_rank = 10)
+	void test(int hit_rank = 10)
 	{
 		logging.record();
 		
@@ -110,8 +110,8 @@ public:
 
 			double threshold;
 			double vari_mark = 0;
-			unsigned int total = 0;
-			unsigned int hit = 0;
+			int total = 0;
+			int hit = 0;
 			for(auto i=threshold_dev.begin(); i!=threshold_dev.end(); ++i)
 			{
 				if (i->second == false)
@@ -163,7 +163,7 @@ public:
 			<<", Best = "<<best_triplet_result;
 	}
 
-	void test_link_prediction(unsigned hit_rank = 10)
+	void test_link_prediction(int hit_rank = 10)
 	{
 		double mean = 0;
 		double hits = 0;
@@ -179,7 +179,7 @@ public:
 			++ arr_total[data_model.relation_type[i->second]];
 		}
 
-		unsigned cnt = 0;
+		int cnt = 0;
 
 #pragma omp parallel for
 		for(auto i=data_model.data_test_true.begin(); i!=data_model.data_test_true.end(); ++i)
@@ -190,7 +190,7 @@ public:
 				std::cout<<cnt<<',';
 			}
 
-			pair<pair<unsigned, unsigned>, unsigned> t = *i;
+			pair<pair<int, int>, int> t = *i;
 			int frmean = 0;
 			int rmean = 0;
 			double score_i = prob_triplets(*i);
@@ -292,13 +292,13 @@ public:
 		logging.record()<<"Filter.BestHITS = "<<best_link_fhitatten;
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, const unsigned id_relation) const
+	virtual void draw(const string& filename, const int radius, const int id_relation) const
 	{
 		return;
 	}
 
-	virtual void draw(const string& filename, const unsigned radius, 
-		const unsigned id_head, const unsigned id_relation)
+	virtual void draw(const string& filename, const int radius, 
+		const int id_head, const int id_relation)
 	{
 		return;
 	}
@@ -314,12 +314,12 @@ public:
 	}
 
 public:
-	unsigned count_entity() const
+	int count_entity() const
 	{
 		return data_model.set_entity.size();
 	}
 
-	unsigned count_relation() const
+	int count_relation() const
 	{
 		return data_model.set_relation.size();
 	}

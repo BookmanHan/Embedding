@@ -5,50 +5,50 @@
 class DataModel
 {
 public:
-	set<pair<pair<unsigned, unsigned>, unsigned> >		check_data_train;
-	set<pair<pair<unsigned, unsigned>, unsigned> >		check_data_all;
+	set<pair<pair<int, int>, int> >		check_data_train;
+	set<pair<pair<int, int>, int> >		check_data_all;
 
 public:
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	data_train;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	data_dev_true;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	data_dev_false;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	data_test_true;
-	vector<pair<pair<unsigned, unsigned>, unsigned> >	data_test_false;
+	vector<pair<pair<int, int>, int> >	data_train;
+	vector<pair<pair<int, int>, int> >	data_dev_true;
+	vector<pair<pair<int, int>, int> >	data_dev_false;
+	vector<pair<pair<int, int>, int> >	data_test_true;
+	vector<pair<pair<int, int>, int> >	data_test_false;
 
 public:
-	set<unsigned>			set_tail;
-	set<unsigned>			set_head;
+	set<int>			set_tail;
+	set<int>			set_head;
 	set<string>			set_entity;
 	set<string>			set_relation;
 
 public:
-	vector<set<unsigned>>	set_relation_tail;
-	vector<set<unsigned>>	set_relation_head;
+	vector<set<int>>	set_relation_tail;
+	vector<set<int>>	set_relation_head;
 
 public:
-	vector<unsigned>	relation_type;
+	vector<int>	relation_type;
 
 public:
 	vector<string>		entity_id_to_name;
 	vector<string>		relation_id_to_name;
-	map<string, unsigned>	entity_name_to_id;
-	map<string, unsigned>	relation_name_to_id;
+	map<string, int>	entity_name_to_id;
+	map<string, int>	relation_name_to_id;
 
 public:
 	vector<double>		prob_head;
 	vector<double>		prob_tail;
 	vector<double>		relation_tph;
 	vector<double>		relation_hpt;
-	map<string, unsigned>	count_entity;
+	map<string, int>	count_entity;
 
 public:
-	map<unsigned, map<unsigned, unsigned> >	tails;
-	map<unsigned, map<unsigned, unsigned> >	heads;
+	map<int, map<int, int> >	tails;
+	map<int, map<int, int> >	heads;
 
 public:
-	map<unsigned, map<unsigned, vector<unsigned> > >     rel_heads;
-	map<unsigned, map<unsigned, vector<unsigned> > >     rel_tails;
-	map<pair<unsigned, unsigned>, unsigned>		     rel_finder;
+	map<int, map<int, vector<int> > >     rel_heads;
+	map<int, map<int, vector<int> > >     rel_tails;
+	map<pair<int, int>, int>		     rel_finder;
 	
 public:
 	DataModel(const Dataset& dataset)
@@ -186,8 +186,8 @@ public:
 
 	void load_testing(	
 		const string& filename, 
-		vector<pair<pair<unsigned, unsigned>,unsigned>>& vin_true,
-		vector<pair<pair<unsigned, unsigned>,unsigned>>& vin_false,
+		vector<pair<pair<int, int>,int>>& vin_true,
+		vector<pair<pair<int, int>,int>>& vin_false,
 		bool self_sampling = false)
 	{
 		fstream fin(filename);
@@ -217,7 +217,7 @@ public:
 			while(!fin.eof())
 			{
 				string head, tail, relation;
-				pair<pair<unsigned, unsigned>, unsigned>	sample_false;
+				pair<pair<int, int>, int>	sample_false;
 
 				fin>>head>>relation>>tail;
 
@@ -237,8 +237,8 @@ public:
 	}
 
 	void sample_false_triplet(	
-		const pair<pair<unsigned,unsigned>,unsigned>& origin,
-		pair<pair<unsigned,unsigned>,unsigned>& triplet) const
+		const pair<pair<int,int>,int>& origin,
+		pair<pair<int,int>,int>& triplet) const
 	{
 
 		double prob = relation_hpt[origin.second]/(relation_hpt[origin.second] + relation_tph[origin.second]);
@@ -261,8 +261,8 @@ public:
 	}
 
 	void sample_false_triplet_relation(	
-		const pair<pair<unsigned,unsigned>,unsigned>& origin,
-		pair<pair<unsigned,unsigned>,unsigned>& triplet) const
+		const pair<pair<int,int>,int>& origin,
+		pair<pair<int,int>,int>& triplet) const
 	{
 
 		double prob = relation_hpt[origin.second]/(relation_hpt[origin.second] + relation_tph[origin.second]);
