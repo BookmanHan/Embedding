@@ -4,100 +4,25 @@
 #include "GeometricModel.hpp"
 #include "OrbitModel.hpp"
 #include <omp.h>
-#include <boost/python.hpp> 
-#include <boost/numpy.hpp>
-
-//TransE-100-57%
-//TransE-500-89%
 
 //TODO: 
 //1.TransG : new componenet = tail - head;
 //2.TransG_Hirachical.
 
-using namespace boost::python;
-using namespace boost::numpy;
-
-void hello(char const* forkname)
-{
-	cout<<"Hello, Embedding"<<endl;
-	cout<<forkname<<endl;
-}
-
-void threading(int num)
-{
-	omp_set_num_threads(num);
-}
-
-ndarray np(const int m, const int n)
-{
-	//auto dims = nd.get_shape();
-	//double const * b = reinterpret_cast<double const *>(nd.get_data());
-	//cout<<dims[0]<<endl;
-	//for(auto i=0; i<dims[0]; ++i)
-	//{
-	//	cout<<b[i]<<endl;
-	//}
-
-	mat *re = new mat();
-	*re = randu(m, n);
-	return boost::numpy::from_data(re->mem, dtype::get_builtin<double>(), boost::python::make_tuple(m, n), 
-		boost::python::make_tuple(sizeof(double), sizeof(double)), boost::python::object());
-}
-
-void py_TransG(	const str& dataset, 
-				const str& task,
-				int dim, double alpha, double margin, int init_n_cluster, double crp, int epos, int training_round)
-{
-	const Dataset* ds = nullptr;
-	if (dataset == "WN11")
-		ds = &WN11;
-	else if (dataset == "WN18")
-		ds = &WN18;
-	else if (dataset == "FB13")
-		ds = &FB13;
-	else if (dataset == "FB15K")
-		ds = &FB15K;
-
-	TaskType tt = LinkPredictionHead;
-	if (task == "Head")
-		tt = LinkPredictionHead;
-	else if (task == "Tail")
-		tt = LinkPredictionTail;
-	else
-		tt = TripletClassification;
-
-	Model*	model = nullptr;
-	model = new TransG(*ds, tt, report_path, dim, alpha, margin, init_n_cluster, crp, epos);
-	model->run(training_round);
-	model->test();
-	delete model;
-}
-
-BOOST_PYTHON_MODULE(Embedding)
-{
-	Py_Initialize();
-	boost::numpy::initialize();
-	def("hello", hello);
-	def("TransG", py_TransG);
-	def("Threading", threading);
-	def("np", np);
-}
-
+//TransE-WN18-100-57%
+//TransE-WN18-500-89%
+//TransG-WN11-10-70%
+//TransG-WN11-30-80%
+//TransG-H-WN11-100-84%
+//TransG-H-WN11-100-83.7%
 int main(int argc, char* argv[])
 {
 	srand(time(nullptr));
-
 	omp_set_num_threads(6);
 
 	Model*	model = nullptr;
-	//model = new TransE(WN11, TripletClassification, report_path, 50, 0.01, 3.0);
-	model = new TransG(WN11, TripletClassification, report_path, 50, 0.01, 3.0, 1, 0.1, 1);
-	model->run(5000);
-	model->test();
-	delete model;
-
-	model = new TransG(WN18, LinkPredictionTail, report_path, 400, 0.001, exp(3.5), 1, 0.1, 10);
-	model->run(5000);
+	model = new TransG_Hiracherical(WN18, LinkPredictionTail, report_path, 50, 0.01, 30.0, 1, 0.2, 1);
+	model->run(100);
 	model->test();
 	delete model;
 
@@ -129,7 +54,6 @@ int main(int argc, char* argv[])
 //					{
 //						if (dm.rel_finder.find(make_pair(*a, *c))->second == i->first)
 //							continue;
-
 //						log.record();
 //						log.record()<<dm.relation_id_to_name[i->first];
 //						log.record()<<dm.relation_id_to_name[dm.rel_finder.find(make_pair(*a, *c))->second];

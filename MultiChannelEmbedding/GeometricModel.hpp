@@ -1197,7 +1197,7 @@ protected:
 	vector<vec>				embedding_entity;
 	vector<vector<vec>>		embedding_clusters;
 	vector<vec>				weights_clusters;
-	vector<int>		size_clusters;
+	vector<int>				size_clusters;
 	vec						variance;
 
 protected:
@@ -1205,13 +1205,13 @@ protected:
 	const double			alpha;
 	const bool				single_or_total;
 	const double			training_threshold;
-	const int			dim;
+	const int				dim;
 	const bool				be_weight_normalized;
-	const int			step_before;
+	const int				step_before;
 	const double			normalizor;
 
 protected:
-	double			CRP_factor;
+	double					CRP_factor;
 
 public:
 	TransG_Hiracherical(
@@ -1273,7 +1273,7 @@ public:
 		this->CRP_factor = CRP_factor / data_model.data_train.size() * count_relation();
 
 		variance.resize(count_entity());
-		variance.fill(1.0);
+		variance.fill(0.0);
 	}
 
 public:
@@ -1291,7 +1291,7 @@ public:
 			vec error_c = (embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
 			- embedding_entity[triplet.first.second]);
 			mixed_prob = max(mixed_prob, fabs(weights_clusters[triplet.second][c]) 
-				* exp(-as_scalar(error_c.t()*error_c)/total_variance));
+				* exp(-sum(abs(error_c))/total_variance));
 		}
 
 		return mixed_prob;
@@ -1308,7 +1308,7 @@ public:
 			vec error_c = embedding_entity[triplet.first.first] + embedding_clusters[triplet.second][c]
 			- embedding_entity[triplet.first.second];
 			mixed_prob += fabs(weights_clusters[triplet.second][c]) 
-				* exp(-as_scalar(error_c.t()*error_c)/total_variance);
+				* exp(-sum(abs(error_c))/total_variance);
 		}
 
 		return mixed_prob;
@@ -1355,40 +1355,47 @@ public:
 		+ variance[triplet.first.second] * variance[triplet.first.second] + 1;
 		double total_variance_f = variance[triplet_f.first.first] * variance[triplet_f.first.first]
 		+ variance[triplet_f.first.second] * variance[triplet_f.first.second] + 1;
-		double prob_local_true =  exp(-as_scalar((head + relation - tail).t() * (head + relation - tail))
-			/total_variance);
-		double prob_local_false =  exp(-as_scalar((head_f + relation_f - tail_f).t() * (head_f + relation_f - tail_f))
-			/total_variance_f);
+		double prob_local_true = exp(-sum(abs(head + relation - tail)) / total_variance);
+		double prob_local_false = exp(-sum(abs(head_f + relation_f - tail_f)) /total_variance_f);
+
+		const double thres = -0.1;
 
 		variance[triplet.first.first] += alpha * 2 * fabs(weights_clusters[triplet.second][cluster])
-			* prob_local_true /prob_true * as_scalar((head + relation - tail).t() * (head + relation - tail))
-			/ total_variance / total_variance * variance[triplet.first.first];
+			* prob_local_true /prob_true * sum(abs(head + relation - tail))
+			/total_variance /total_variance * variance[triplet.first.first];
+		variance[triplet.first.first] = max(-thres, min(thres, variance[triplet.first.first]));
+
 		variance[triplet.first.second] += alpha * 2 * fabs(weights_clusters[triplet.second][cluster])
-			* prob_local_true /prob_true * as_scalar((head + relation - tail).t() * (head + relation - tail))
-			/ total_variance / total_variance * variance[triplet.first.second];
+			* prob_local_true /prob_true * sum(abs(head + relation - tail))
+			/total_variance /total_variance * variance[triplet.first.second];
+		variance[triplet.first.second] = max(thres, min(thres, variance[triplet.first.second]));
+
 		variance[triplet_f.first.first] -= alpha * 2 * fabs(weights_clusters[triplet_f.second][cluster])
-			* prob_local_false /prob_false * as_scalar((head_f + relation_f - tail_f).t() * (head_f + relation_f - tail_f))
-			/ total_variance_f / total_variance_f * variance[triplet_f.first.first];
+			* prob_local_false /prob_false * sum(abs(head_f + relation_f - tail_f))
+			/total_variance_f /total_variance_f * variance[triplet_f.first.first];
+		variance[triplet_f.first.first] = max(thres, min(thres, variance[triplet_f.first.first]));
+
 		variance[triplet_f.first.second] -= alpha * 2 * fabs(weights_clusters[triplet_f.second][cluster])
-			* prob_local_false /prob_false * as_scalar((head_f + relation_f - tail_f).t() * (head_f + relation_f - tail_f))
-			/ total_variance_f / total_variance_f * variance[triplet_f.first.second];
+			* prob_local_false /prob_false * sum(abs(head_f + relation_f - tail_f))
+			/total_variance_f /total_variance_f * variance[triplet_f.first.second];
+		variance[triplet_f.first.second] = max(thres, min(thres, variance[triplet_f.first.second]));
 
 		weights_clusters[triplet.second][cluster] += 
 			alpha /prob_true * prob_local_true * sign(weights_clusters[triplet.second][cluster]);
 		weights_clusters[triplet_f.second][cluster] -= 
 			alpha /prob_false * prob_local_false  * sign(weights_clusters[triplet_f.second][cluster]);
 
-		head -= alpha * (head + relation - tail) 
+		head -= alpha * sign(head + relation - tail) 
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]) / total_variance;
-		tail += alpha * (head + relation - tail)
+		tail += alpha * sign(head + relation - tail)
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]) / total_variance;
-		relation -= alpha * (head + relation - tail)
+		relation -= alpha * sign(head + relation - tail)
 			* prob_local_true/prob_true * fabs(weights_clusters[triplet.second][cluster]) / total_variance;
-		head_f += alpha * (head_f + relation_f - tail_f)
+		head_f += alpha * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
-		tail_f -= alpha * (head_f + relation_f - tail_f)
+		tail_f -= alpha * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false  * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
-		relation_f += alpha * (head_f + relation_f - tail_f)
+		relation_f += alpha * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
 
 		if (norm(relation) > 1.0)
@@ -1409,20 +1416,17 @@ public:
 		double prob_true = training_prob_triplets(triplet);
 		double prob_false = training_prob_triplets(triplet_f);
 
-		if (prob_true/prob_false > training_threshold)
+		if (prob_true/prob_false > exp(training_threshold))
 			return;
 
-		vec prob_CRP(size_clusters[triplet.second]);
-		for(int c=0; c<prob_CRP.size(); ++c)
+		for(int c=0; c<size_clusters[triplet.second]; ++c)
 		{
 			train_cluster_once(triplet, triplet_f, c, prob_true, prob_false, alpha);
-			prob_CRP[c] = fabs(weights_clusters[triplet.second][c]) 
-				* exp(-sum(abs(head + embedding_clusters[triplet.second][c] - tail)));
 		}
 
 		double prob_new_component = CRP_factor * exp(-sum(abs(head - tail)));
 
-		if (randu() < prob_new_component/(prob_new_component + sum(prob_CRP)) 
+		if (randu() < prob_new_component/(prob_new_component + prob_true) 
 			&& size_clusters[triplet.second] <= 20
 			&& epos >= step_before)
 		{
@@ -1451,7 +1455,7 @@ public:
 			tail_f = normalise(tail_f);
 
 		if (be_weight_normalized)
-			weights_clusters[triplet.second] /= sum(weights_clusters[triplet.second]);
+			weights_clusters[triplet.second] = normalise(weights_clusters[triplet.second]);
 	}
 
 public:
