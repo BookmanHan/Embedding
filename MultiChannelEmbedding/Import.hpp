@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <bitset>
 #include <queue>
+#include <functional>
 
 using namespace std;
 using namespace arma;

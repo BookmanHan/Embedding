@@ -212,7 +212,6 @@ public:
 			}
 			else
 			{
-				int noted = 0;
 				for(auto j=0; j!=data_model.set_entity.size(); ++j)
 				{
 					if (task_type == LinkPredictionHead)
@@ -222,12 +221,6 @@ public:
 
 					if (score_i > prob_triplets(t))
 						continue;
-
-					if (data_model.check_data_all.find(t) == data_model.check_data_all.end() && 
-						prob_triplets(make_pair(make_pair(t.first.first, noted), t.second)) <= prob_triplets(t))
-					{
-						noted = j;
-					}
 
 					++ rmean;
 

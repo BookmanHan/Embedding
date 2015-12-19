@@ -271,7 +271,7 @@ public:
 		double& orbit = embedding_orbit[triplet.second];
 
 		double score = 
-			(as_scalar((head + relation - tail).t()*(head + relation - tail)) - orbit*orbit);
+			fabs(as_scalar((head + relation - tail).t()*(head + relation - tail)) - orbit*orbit);
 
 		if (score < 0)
 			score = 0;
@@ -297,12 +297,9 @@ public:
 		vec& relation_f = embedding_relation[triplet_f.second];
 
 		double factor = 
-			- (as_scalar((head + relation - tail).t()*(head + relation - tail)) - orbit*orbit);
+			-sign(as_scalar((head + relation - tail).t()*(head + relation - tail)) - orbit*orbit);
 		double factor_f = 
-			- (as_scalar((head_f + relation_f - tail_f).t()*(head_f + relation_f - tail_f)) - orbit*orbit);
-	
-		factor = factor > 0? +1 : 0;
-		factor_f = factor_f >0? +1 : 0;
+			-sign(as_scalar((head_f + relation_f - tail_f).t()*(head_f + relation_f - tail_f)) - orbit*orbit);
 
 		head += alpha * factor * (head + relation - tail);
 		relation += alpha * factor * (head + relation - tail);
@@ -332,6 +329,9 @@ public:
 class OrbitHyper
 	:public OrbitModel
 {
+protected:
+	vector<vec>	embedding_gap;
+
 public:
 	OrbitHyper(	
 		const Dataset& dataset,
@@ -343,8 +343,14 @@ public:
 		:OrbitModel(dataset, task_type, logging_base_path, 
 		dim, alpha, training_threshold)
 	{
-		logging.record()<<"\t[Name]\tOrbitE";
-		embedding_orbit = ones(count_relation());;
+		logging.record()<<"\t[Name]\tOrbitE HyperPlane";
+		embedding_orbit = ones(count_relation());
+
+		embedding_gap.resize(count_relation());
+		for(auto i=embedding_gap.begin(); i!=embedding_gap.end(); ++i)
+		{
+			*i = randu(dim);
+		}
 	}
 
 public:
@@ -353,9 +359,12 @@ public:
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
+		vec& gap = embedding_gap[triplet.second];
+
 		double& orbit = embedding_orbit[triplet.second];
 		
-		return - fabs(sum(abs(head - relation * head.t() * relation - tail))
+		return - fabs(sum(abs(head - relation * head.t() * relation + gap - tail
+			+ relation * tail.t() * relation))
 			- orbit*orbit);
 	}
 
@@ -364,6 +373,7 @@ public:
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
+		vec& gap = embedding_gap[triplet.second];
 		double& orbit = embedding_orbit[triplet.second];
 
 		pair<pair<int, int>,int> triplet_f;
@@ -375,24 +385,30 @@ public:
 		vec& head_f = embedding_entity[triplet_f.first.first];
 		vec& tail_f = embedding_entity[triplet_f.first.second];
 		vec& relation_f = embedding_relation[triplet_f.second];
+		vec& gap_f = embedding_gap[triplet_f.second];
 
 		double factor = 
-			- sign(sum(abs(head - relation * head.t() * relation - tail))
-			- orbit*orbit);
+			- sign(sum(abs(head - relation * head.t() * relation + gap - tail + 
+			relation * tail.t() * relation)) - orbit*orbit);
 		double factor_f = 
-			- sign(sum(abs(head_f - relation_f * head_f.t() * relation_f - tail_f))
-			- orbit*orbit);
+			- sign(sum(abs(head_f - relation_f * head_f.t() * relation_f + gap_f - tail_f +
+			relation * tail_f.t() * relation)) - orbit*orbit);
 
-		head += alpha * factor * (eye(dim, dim)-relation *relation.t())
-			* sign(head - relation * head.t() * relation - tail);
-		tail -= alpha * factor * sign(head - relation * head.t() * relation - tail);
-		relation -= alpha * factor * (eye(dim, dim)* as_scalar(head.t()*relation) + relation*head.t())
-			* sign(head - relation * head.t() * relation - tail);
-		head_f -= alpha * factor_f * (eye(dim, dim)-relation_f *relation_f.t())
-			* sign(head_f - relation_f * head_f.t() * relation_f - tail_f);
-		tail_f += alpha * factor_f * sign(head_f - relation_f * head_f.t() * relation_f - tail_f);
-		relation_f += alpha * factor_f * (eye(dim, dim)* as_scalar(head_f.t()*relation_f) + relation_f*head_f.t())
-			* sign(head_f - relation_f * head_f.t() * relation - tail_f);
+		vec factor_vec = sign(head - relation * head.t() * relation + gap - tail + relation * tail.t() * relation);
+
+		head += alpha * factor * (eye(dim, dim)-relation *relation.t()) * factor_vec;
+		tail -= alpha * factor * (eye(dim, dim)-relation *relation.t()) * factor_vec;
+		relation -= alpha * factor * 
+			((eye(dim, dim)* as_scalar((head-tail).t()*relation) + relation*(head-tail).t())) * factor_vec; 
+		gap += alpha * factor * factor_vec;
+
+		vec factor_vec_f = sign(head_f - relation_f * head_f.t() * relation_f + gap_f - tail_f + relation_f * tail_f.t() * relation_f);
+		head_f -= alpha * factor * (eye(dim, dim)-relation_f *relation_f.t()) * factor_vec_f;
+		tail_f += alpha * factor * (eye(dim, dim)-relation_f *relation_f.t()) * factor_vec_f; 
+		relation_f += alpha * factor * 
+			((eye(dim, dim)* as_scalar((head_f-tail_f).t()*relation_f) + relation_f*(head_f-tail_f).t())) * factor_vec_f; 
+		gap_f += alpha * factor * factor_vec_f;
+
 		orbit -= alpha *(factor - factor_f) * orbit;
 
 		if (norm(head) > 1.0)
@@ -440,5 +456,531 @@ public:
 		relation_reg(triplet.second, rand()%count_relation(), ESS_factor);
 		//entity_reg(triplet.first.first, rand()%count_entity(), ESS_factor);
 		//entity_reg(triplet.first.second, rand()%count_entity(), ESS_factor);
+	}
+};
+
+class OrbitE_BOX
+	:public OrbitModel
+{
+public:
+	OrbitE_BOX(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold)
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold)
+	{
+		logging.record()<<"\t[Name]\tOrbitE BOX";
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = 
+			fabs(as_scalar(sum(abs(head + relation - tail)) - orbit*orbit));
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		double factor = 
+			- sign(as_scalar(sum(abs(head + relation - tail)) - orbit*orbit));
+		double factor_f = 
+			- sign(as_scalar(sum(abs(head_f + relation_f - tail_f)) - orbit*orbit));
+
+		uword a;
+		abs(head + relation - tail).max(a);
+
+		head[a] += alpha * factor * sign(head + relation - tail)[a];
+		relation[a] += alpha * factor * sign(head + relation - tail)[a];
+		tail[a] -= alpha * factor * sign(head + relation - tail)[a];
+		
+		uword b;
+		abs(head_f + relation_f - tail_f).max(b);
+
+		head_f[b] -= alpha * factor_f * sign(head_f + relation_f - tail_f)[b];
+		relation_f[b] -= alpha * factor_f * sign(head_f + relation_f - tail_f)[b];
+		tail_f[b] += alpha * factor_f * sign(head_f + relation_f - tail)[b];
+
+		orbit -= alpha *(factor - factor_f)*orbit;
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
+class MultiLayerPerceptron
+{
+protected:
+	vector<tuple<mat, function<double(const double&)>, function<double(const double&)>>>	weights;
+	const vector<int>																		network_architecture;
+
+public:
+	MultiLayerPerceptron(const vector<int>& network_architecture,
+		function<double(const double&)> fn_active = [](const double x){return (exp(x)-exp(-x))/(exp(x)+exp(-x));}, 
+		function<double(const double&)> fn_derv = [](const double x){return 1-x*x;})
+		:network_architecture(network_architecture)
+	{
+		for(auto layer=0; layer<network_architecture.size()-1; ++layer)
+		{
+			weights.push_back(make_tuple(
+				randn(network_architecture[layer], network_architecture[layer+1]), 
+				fn_active, fn_derv));
+		}
+	}
+
+	void add_layer(	const double ndin, 
+		const double ndout, 
+		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
+		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
+	{
+		weights.push_back(make_tuple(randn(ndin, ndout), fn_active, fn_derv));
+	}
+
+public:
+	virtual double infer(const vec& din) const
+	{
+		vec dout = din;
+		for(auto layer : weights)
+		{
+			dout = get<0>(layer).t() * dout;
+			for_each(dout.begin(), dout.end(), [&](double& elem){elem = get<1>(layer)(elem);});
+		}
+
+		return dout[0];
+	}
+
+public:
+	virtual void train_once(vec& head, vec& tail, const vec& dout, double alpha)
+	{
+		vector<vec>	hiddens;
+		hiddens.push_back(join_cols(head, tail));
+		for(auto layer : weights)
+		{
+			vec hidden_out = get<0>(layer).t() * hiddens.back();
+			for_each(hidden_out.begin(), hidden_out.end(), [&](double& elem){elem = get<1>(layer)(elem);});
+			hiddens.push_back(hidden_out);
+		}
+
+		vec derv = sign(hiddens.back() - dout);
+		for(auto layer=weights.size(); layer > 0; --layer)
+		{
+			for(auto dim_derv=0; dim_derv<derv.n_elem; ++dim_derv)
+			{
+				derv[dim_derv] *= get<2>(weights[layer-1])(hiddens[layer][dim_derv]);
+			}
+
+			get<0>(weights[layer-1]) -= alpha * hiddens[layer-1] * derv.t();
+			derv = get<0>(weights[layer-1]) * derv;
+		}
+		
+		head -= alpha * derv.rows(0, head.size()-1);
+		tail -= alpha * derv.rows(head.size(), head.size() + tail.size()-1);
+	}
+};
+
+class OrbitE_Deep
+	:public OrbitModel
+{
+protected:
+	vector<MultiLayerPerceptron> mlp;
+
+public:
+	OrbitE_Deep(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		vector<int>& na,
+		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
+		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold)
+	{
+		logging.record()<<"\t[Name]\tOrbitE Deep";
+		logging.record()<<"\t[Network Structure]\t";
+		for(auto i=0; i<na.size(); ++i)
+		{
+			logging<<na[i]<<'\t';
+		}
+
+		for(auto i=0; i<count_relation(); ++i)
+		{
+			mlp.push_back(MultiLayerPerceptron(na, fn_active, fn_derv));
+		}
+
+		embedding_orbit = zeros(count_relation());
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = fabs(mlp[triplet.second].infer(join_cols(head, tail)) - orbit*orbit);
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		double factor = 
+			- sign(mlp[triplet.second].infer(join_cols(head, tail)) - orbit*orbit);
+		double factor_f = 
+			- sign(mlp[triplet_f.second].infer(join_cols(head_f, tail_f)) - orbit*orbit);
+
+		vec dout(1);
+		dout << orbit*orbit;
+		
+		mlp[triplet.second].train_once(head, tail, dout, alpha);
+		mlp[triplet.second].train_once(head_f, tail_f, dout, -alpha);
+
+		//orbit -= alpha * alpha *(factor - factor_f)*orbit;
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
+
+class OrbitE_H
+	:public OrbitModel
+{
+protected:
+	vector<vec>	embedding_weights;
+
+public:
+	OrbitE_H(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold)
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold)
+	{
+		logging.record()<<"\t[Name]\tOrbitE H";
+
+		embedding_weights.resize(count_relation());
+		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
+		{
+			*i = randu(dim, 1);
+		}
+
+		embedding_orbit.fill(10.0);
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = fabs(as_scalar((head + relation).t() * tail) - orbit);
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		//vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+		//vec& weight_f = embedding_weights[triplet_f.second];
+
+		double factor = - sign(as_scalar((head + relation).t() * tail) - orbit);
+		double factor_f = - sign(as_scalar((head_f + relation_f).t() * tail_f) - orbit);
+
+		head += alpha * factor * tail;
+		relation += alpha * factor * tail;
+		tail += alpha * factor * (head + relation);
+		head_f -= alpha * factor_f * tail_f;
+		relation_f -= alpha * factor_f * tail_f;
+		tail_f -= alpha * factor_f * (head_f + relation_f);
+
+		//orbit -= alpha *(factor - factor_f);
+
+		//if (norm(weight) > 1.0)
+		//	weight = normalise(weight);
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
+class OrbitE_HD
+	:public OrbitModel
+{
+protected:
+	vector<vec>	embedding_weights;
+
+public:
+	OrbitE_HD(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold)
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold)
+	{
+		logging.record()<<"\t[Name]\tOrbitE H";
+
+		embedding_weights.resize(count_relation());
+		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
+		{
+			*i = randu(dim, 1);
+		}
+
+		embedding_orbit.fill(10.0);
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = fabs(as_scalar((head + relation).t() * (tail + weight)) - orbit);
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+		vec& weight_f = embedding_weights[triplet_f.second];
+
+		double factor = - sign(as_scalar((head + relation).t() * (tail + weight)) - orbit);
+		double factor_f = - sign(as_scalar((head_f + relation_f).t() * (tail_f + weight_f)) - orbit);
+
+		head += alpha * factor * (tail + weight);
+		relation += alpha * factor * (tail + weight);
+		tail += alpha * factor * (head + relation);
+		weight += alpha * factor * (head + relation);
+
+		head_f -= alpha * factor_f * (tail_f + weight_f);
+		relation_f -= alpha * factor_f * (tail_f + weight_f);
+		tail_f -= alpha * factor_f * (head_f + relation_f);
+		weight_f -= alpha * factor_f * (head_f + relation_f);
+
+		orbit -= alpha *(factor - factor_f);
+
+		if (norm(weight) > 1.0)
+			weight = normalise(weight);
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
+class OrbitE_HDA
+	:public OrbitModel
+{
+protected:
+	vector<vec>	embedding_weights;
+
+public:
+	OrbitE_HDA(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold)
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold)
+	{
+		logging.record()<<"\t[Name]\tOrbitE H";
+
+		embedding_weights.resize(count_relation());
+		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
+		{
+			*i = randu(dim, 1);
+		}
+
+		embedding_orbit.fill(10.0);
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = fabs(as_scalar(abs(head + relation).t() * abs(tail + weight)) - orbit);
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+		vec& weight_f = embedding_weights[triplet_f.second];
+
+		double factor = - sign(as_scalar(abs(head + relation).t() * abs(tail + weight)) - orbit);
+		double factor_f = - sign(as_scalar(abs(head_f + relation_f).t() * abs(tail_f + weight_f)) - orbit);
+
+		head += alpha * factor * sign(head + relation) % abs(tail + weight);
+		relation += alpha * factor * sign(head + relation) % abs(tail + weight);
+		tail += alpha * factor * sign(tail + weight) % abs(head + relation);
+		weight += alpha * factor * sign(tail + weight) % abs(head + relation);
+
+		head_f -= alpha * factor_f * sign(head_f + relation_f) % abs(tail_f + weight_f);
+		relation_f -= alpha * factor_f * sign(head_f + relation_f) % abs(tail_f + weight_f);
+		tail_f -= alpha * factor_f * sign(tail_f + weight_f) % abs(head_f + relation_f);
+		weight_f -= alpha * factor_f * sign(tail_f + weight_f) % abs(head_f + relation_f);
+
+		orbit -= alpha *(factor - factor_f);
+
+		if (norm(weight) > 1.0)
+			weight = normalise(weight);
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
 	}
 };

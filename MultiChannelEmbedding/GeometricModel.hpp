@@ -1138,19 +1138,11 @@ public:
 	{
 		if (task_type == TransM_ReportClusterNumber)
 		{
-			vector<int>	count_cluster(n_cluster);
-			double		total_number = 0;
-			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
+			for(auto i=0; i<count_relation(); ++i)
 			{
-				int n = 0;
-				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
-				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
-				++ count_cluster[n];
-				total_number += n;
+				cout<<data_model.relation_id_to_name[i]<<':';
+				cout<<size_clusters[i]<<endl;
 			}
-			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<int>(cout, "\n"));
-			cout<<total_number/count_relation()<<endl;
-			cout<<total_number<<endl;
 			return;
 		}
 		else if (task_type == TransM_ReportDetailedClusterLabel)
@@ -1209,6 +1201,7 @@ protected:
 	const bool				be_weight_normalized;
 	const int				step_before;
 	const double			normalizor;
+	const double			variance_bound;
 
 protected:
 	double					CRP_factor;
@@ -1224,12 +1217,13 @@ public:
 		int n_cluster,  
 		double CRP_factor, 
 		int step_before = 10,
+		double variance_bound = 0.01,
 		bool sot = false,
 		bool be_weight_normalized = true)
 		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha),
 		training_threshold(training_threshold), n_cluster(n_cluster), CRP_factor(CRP_factor),
 		single_or_total(sot), be_weight_normalized(be_weight_normalized), step_before(step_before),
-		normalizor(1.0/pow(3.1415, dim/2))
+		normalizor(1.0/pow(3.1415, dim/2)), variance_bound(variance_bound)
 	{
 		logging.record()<<"\t[Name]\tTransM";
 		logging.record()<<"\t[Dimension]\t"<<dim;
@@ -1358,7 +1352,7 @@ public:
 		double prob_local_true = exp(-sum(abs(head + relation - tail)) / total_variance);
 		double prob_local_false = exp(-sum(abs(head_f + relation_f - tail_f)) /total_variance_f);
 
-		const double thres = -0.1;
+		const double thres = - variance_bound;
 
 		variance[triplet.first.first] += alpha * 2 * fabs(weights_clusters[triplet.second][cluster])
 			* prob_local_true /prob_true * sum(abs(head + relation - tail))
@@ -1463,19 +1457,11 @@ public:
 	{
 		if (task_type == TransM_ReportClusterNumber)
 		{
-			vector<int>	count_cluster(n_cluster);
-			double		total_number = 0;
-			for(auto i=weights_clusters.begin(); i!= weights_clusters.end(); ++i)
+			for(auto i=0; i<count_relation(); ++i)
 			{
-				int n = 0;
-				for_each(i->begin(), i->end(), [&](double w) {if (fabs(w)>0.005) ++n;});
-				cout<<data_model.relation_id_to_name[i - weights_clusters.begin()]<<":"<<n<<endl;
-				++ count_cluster[n];
-				total_number += n;
+				cout<<data_model.relation_id_to_name[i]<<':';
+				cout<<size_clusters[i]<<endl;
 			}
-			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<int>(cout, "\n"));
-			cout<<total_number/count_relation()<<endl;
-			cout<<total_number<<endl;
 			return;
 		}
 		else if (task_type == TransM_ReportDetailedClusterLabel)
