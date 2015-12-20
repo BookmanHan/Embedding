@@ -35,10 +35,10 @@ public:
 		embedding_orbit = randu(count_relation());
 
 		embedding_entity.resize(count_entity());
-		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 
 		embedding_relation.resize(count_relation());
-		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
+		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 	}
 
 public:
@@ -729,7 +729,7 @@ public:
 		embedding_weights.resize(count_relation());
 		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
 		{
-			*i = randu(dim, 1);
+			*i = (2*randu(dim,1)-1)*sqrt(6.0/dim);
 		}
 
 		embedding_orbit.fill(10.0);
@@ -819,7 +819,7 @@ public:
 		embedding_weights.resize(count_relation());
 		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
 		{
-			*i = randu(dim, 1);
+			*i = (2*randu(dim,1)-1)*sqrt(6.0/dim);
 		}
 
 		embedding_orbit.fill(10.0);
@@ -913,10 +913,15 @@ public:
 		embedding_weights.resize(count_relation());
 		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
 		{
-			*i = randu(dim, 1);
+			*i = (2*randu(dim,1)-1)*sqrt(6.0/dim);
 		}
 
-		embedding_orbit.fill(10.0);
+		for(auto i=embedding_orbit.begin(); i!=embedding_orbit.end(); ++i)
+		{
+			*i = (2*randu()-1)*sqrt(6.0/dim);
+		}
+
+		//embedding_orbit.fill(dim*dim*4);
 	}
 
 	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 

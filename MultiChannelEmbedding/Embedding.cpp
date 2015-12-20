@@ -23,16 +23,13 @@ int main(int argc, char* argv[])
 
 	Model*	model = nullptr;
 
-	model = new OrbitE_HDA(FB15K, LinkPredictionHead, report_path, 400, 0.01, 0.2); 
-	model->run(7000);
-	model->test(1);
-	model->test();
-	//for(auto i=2; i<6; ++i)
-	//{
-	//	model->run(i*500);
-	//	model->test(1);
-	//	model->test();
-	//}
+	model = new OrbitE(FB15K, LinkPredictionTail, report_path, 400, 0.01, 3.0); 
+	for(auto i=1; i<5; ++i)
+	{
+		model->run(i*500);
+		model->test(1);
+		model->test();
+	}
 	delete model;
 
 	//model = new OrbitE_H(FB15K, LinkPredictionTail, report_path, 400, 0.001, 3.0); 

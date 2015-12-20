@@ -32,10 +32,10 @@ public:
 		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
 
 		embedding_entity.resize(count_entity());
-		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 
 		embedding_relation.resize(count_relation());
-		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = randu(dim,1);});
+		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 	}
 
 	virtual void draw(const string& filename, const int radius, const int id_relation) const
@@ -286,7 +286,7 @@ public:
 		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
 
 		embedding_weights.resize(count_relation());
-		for_each(embedding_weights.begin(), embedding_weights.end(), [=](vec& elem){elem = randu(dim,1);});
+		for_each(embedding_weights.begin(), embedding_weights.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 	}
 
 	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
@@ -693,7 +693,7 @@ public:
 		for(auto &elem_vec : embedding_clusters)
 		{
 			elem_vec.resize(n_cluster);
-			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = randu(dim,1);});
+			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 		}
 
 		weights_clusters.resize(count_relation());
@@ -963,7 +963,7 @@ public:
 		for(auto &elem_vec : embedding_clusters)
 		{
 			elem_vec.resize(30);
-			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = randu(dim,1);});
+			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 		}
 
 		weights_clusters.resize(count_relation());
@@ -1109,7 +1109,7 @@ public:
 			{
 				cout<<"A";
 				weights_clusters[triplet.second][size_clusters[triplet.second]] = CRP_factor;
-				embedding_clusters[triplet.second][size_clusters[triplet.second]] = randu(dim, 1); //tail - head;
+				embedding_clusters[triplet.second][size_clusters[triplet.second]] = (2*randu(dim,1)-1)*sqrt(6.0/dim); //tail - head;
 				++ size_clusters[triplet.second];
 			}
 		}
@@ -1243,13 +1243,13 @@ public:
 			logging.record()<<"\t[Single or Total]\tFalse";
 
 		embedding_entity.resize(count_entity());
-		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = randu(dim,1);});
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 
 		embedding_clusters.resize(count_relation());
 		for(auto &elem_vec : embedding_clusters)
 		{
 			elem_vec.resize(30);
-			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = randu(dim,1);});
+			for_each(elem_vec.begin(), elem_vec.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 		}
 
 		weights_clusters.resize(count_relation());
@@ -1428,7 +1428,7 @@ public:
 			{
 				cout<<"A";
 				weights_clusters[triplet.second][size_clusters[triplet.second]] = CRP_factor;
-				embedding_clusters[triplet.second][size_clusters[triplet.second]] = randu(dim, 1);
+				embedding_clusters[triplet.second][size_clusters[triplet.second]] = (2*randu(dim,1)-1)*sqrt(6.0/dim);
 				++ size_clusters[triplet.second];
 			}
 		}
