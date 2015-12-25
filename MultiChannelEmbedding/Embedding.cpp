@@ -3,6 +3,7 @@
 #include "DetailedConfig.hpp"
 #include "GeometricModel.hpp"
 #include "OrbitModel.hpp"
+#include "LatentModel.hpp"
 #include <omp.h>
 
 //TODO: 
@@ -22,15 +23,32 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(4);
 
 	Model*	model = nullptr;
-
-	model = new OrbitE(FB15K, LinkPredictionTail, report_path, 400, 0.01, 3.0); 
-	for(auto i=1; i<5; ++i)
-	{
-		model->run(i*500);
-		model->test(1);
-		model->test();
-	}
+	//model = new TransE(FB13, LinkPredictionTail, report_path, 100, 0.001, 3.0);
+	model = new PropergationModel(FB13, TripletClassification, report_path, 50, 0.1);
+	model->run(500);
+	model->test();
 	delete model;
+
+	//double sigma = 1.0;
+	//model = new OrbitE_KS(WN11, TripletClassification, report_path, 100, 10.0, 3.0,
+	//	[&](const vec& a, const vec& b)
+	//	{
+	//		return exp(-as_scalar((a-b).t()*(a-b))/2/sigma);
+	//	},
+	//	[&](const vec& a, const vec& b)
+	//	{
+	//		return exp(-as_scalar((a-b).t()*(a-b))/2/sigma) * (-1/2/sigma) * (a - b);
+	//	},
+	//	[&](const vec& a, const vec& b)
+	//	{
+	//		return exp(-as_scalar((a-b).t()*(a-b))/2/sigma) * (-1/2/sigma) * (b - a);
+	//	}
+	//); 
+
+	//model->run(500);
+	//model->test(1);
+	//model->test();
+	//delete model;
 
 	//model = new OrbitE_H(FB15K, LinkPredictionTail, report_path, 400, 0.001, 3.0); 
 	//model->run(500);

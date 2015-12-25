@@ -28,6 +28,7 @@
     <ClInclude Include="OrbitModel.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="LatentModel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Embedding.cpp">

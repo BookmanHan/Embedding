@@ -822,6 +822,7 @@
     <ClInclude Include="DetailedConfig.hpp" />
     <ClInclude Include="GeometricModel.hpp" />
     <ClInclude Include="Import.hpp" />
+    <ClInclude Include="LatentModel.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="ModelConfig.hpp" />
     <ClInclude Include="OrbitModel.hpp" />
