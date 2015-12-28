@@ -11,6 +11,8 @@ class Model
 protected:
 	const DataModel		data_model;
 	const TaskType		task_type;
+
+public:
 	ModelLogging		logging;
 
 public:

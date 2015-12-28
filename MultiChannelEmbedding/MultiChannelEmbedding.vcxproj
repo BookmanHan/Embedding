@@ -198,8 +198,8 @@
     <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <UseIntelMKL>Parallel</UseIntelMKL>
-    <UseILP64Interfaces>true</UseILP64Interfaces>
+    <UseIntelMKL>No</UseIntelMKL>
+    <UseILP64Interfaces>false</UseILP64Interfaces>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Python|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -306,7 +306,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryPath)</LibraryPath>
     <LibraryWPath>C:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryWPath)</LibraryWPath>
     <ReferencePath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
@@ -358,7 +358,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>C:\Program Files %28x86%29\Intel\Composer XE 2015\mkl\lib\intel64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\lib\intel64;$(LibraryPath)</LibraryPath>
+    <ReferencePath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Python|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -445,13 +446,14 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableMatrixMultiplyLibraryCall>Default</EnableMatrixMultiplyLibraryCall>
       <Parallelization>true</Parallelization>
+      <CallingConvention>Cdecl</CallingConvention>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mkl_intel_c.lib;mkl_core.lib;mkl_intel_thread.lib;mkl_blas95.lib;mkl_lapack95.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mkl_rt.lib;mkl_blas95.lib;mkl_core.lib;mkl_lapack95.lib;mkl_intel_c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Python|Win32'">
@@ -700,7 +702,7 @@
       <OffloadArch>OffloadArchHaswellVisa31</OffloadArch>
       <OffloadOpenMP>Default</OffloadOpenMP>
       <OffloadOpenMPTarget>Default</OffloadOpenMPTarget>
-      <OpenMP>GenerateParallelCode</OpenMP>
+      <OpenMP>None</OpenMP>
       <Cpp0xSupport>true</Cpp0xSupport>
     </ClCompile>
     <Link>
@@ -708,7 +710,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mkl_intel_ilp64.lib;mkl_core.lib;mkl_intel_thread.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cublas.lib;cublas_device.lib;cudart.lib;nvblas.lib;mkl_rt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Python|x64'">
@@ -828,7 +830,7 @@
     <ClInclude Include="OrbitModel.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
+    <None Include="nvblas.conf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

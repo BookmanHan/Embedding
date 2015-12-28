@@ -22,30 +22,21 @@ int main(int argc, char* argv[])
 	srand(time(nullptr));
 	//omp_set_num_threads(4);
 
-	Model*	model = nullptr;
-	//model = new TransE(FB13, LinkPredictionTail, report_path, 100, 0.001, 3.0);
-	model = new PropergationModel(FB13, TripletClassification, report_path, 50, 0.1);
-	model->run(500);
+	int sigma = 2.0;
+
+	Model* model = nullptr;
+
+	model = new OrbitE_KS(WN18, LinkPredictionTail, report_path, 400, 0.001, 3.0, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
+	model->logging.record()<<"Using Gaussian/Laplician Kernel = "<<sigma;
+	model->run(1000);
+	model->test(1);
+	model->test(2);
 	model->test();
 	delete model;
 
-	//double sigma = 1.0;
-	//model = new OrbitE_KS(WN11, TripletClassification, report_path, 100, 10.0, 3.0,
-	//	[&](const vec& a, const vec& b)
-	//	{
-	//		return exp(-as_scalar((a-b).t()*(a-b))/2/sigma);
-	//	},
-	//	[&](const vec& a, const vec& b)
-	//	{
-	//		return exp(-as_scalar((a-b).t()*(a-b))/2/sigma) * (-1/2/sigma) * (a - b);
-	//	},
-	//	[&](const vec& a, const vec& b)
-	//	{
-	//		return exp(-as_scalar((a-b).t()*(a-b))/2/sigma) * (-1/2/sigma) * (b - a);
-	//	}
-	//); 
-
-	//model->run(500);
+	//model = new OrbitE_KS(FB15K, LinkPredictionHead, report_path, 500, 0.001, 0.8, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
+	//model->logging.record()<<"Using Gaussian/Laplician Kernel = "<<sigma;
+	//model->run(7500);
 	//model->test(1);
 	//model->test();
 	//delete model;

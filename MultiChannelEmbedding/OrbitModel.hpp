@@ -1026,8 +1026,6 @@ public:
 		{
 			*i = (2*randu()-1)*sqrt(6.0/dim);
 		}
-
-		embedding_orbit.fill(100.0);
 	}
 
 	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
@@ -1037,7 +1035,8 @@ public:
 		vec& relation = embedding_relation[triplet.second];
 		double& orbit = embedding_orbit[triplet.second];
 
-		double score = fabs(kernel(head, relation) - kernel(head, tail) - kernel(relation, tail) - orbit);
+		double score = fabs(kernel(head, head) + kernel(tail, tail) + kernel(relation, relation)
+			+ 2 * (kernel(head, relation) - kernel(head, tail) - kernel(relation, tail)) - orbit);
 		return - score;
 	}
 
@@ -1058,19 +1057,132 @@ public:
 		vec& tail_f = embedding_entity[triplet_f.first.second];
 		vec& relation_f = embedding_relation[triplet_f.second];
 
-		double factor = - sign(kernel(head, relation) - kernel(head, tail) - kernel(relation, tail) - orbit);
-		double factor_f = - sign(kernel(head_f, relation_f) - kernel(head_f, tail_f) - kernel(relation_f, tail_f) - orbit);
+		double factor = - sign(kernel(head, head) + kernel(tail, tail) + kernel(relation, relation)
+			+ 2 * (kernel(head, relation) - kernel(head, tail) - kernel(relation, tail)) - orbit);
+		double factor_f = - sign(kernel(head_f, head_f) + kernel(tail_f, tail_f) + kernel(relation_f, relation_f)
+			+ 2 * (kernel(head_f, relation_f) - kernel(head_f, tail_f) - kernel(relation_f, tail_f)) - orbit);
 
-		head += alpha * factor * (derv_a(head, relation) - derv_a(head, tail));
-		relation += alpha * factor * (derv_b(head, relation) - derv_a(relation, tail));
-		tail += alpha * factor * (- derv_b(head, tail) - derv_b(relation, tail));
+		head += alpha * factor * 
+			(derv_a(head, head) + derv_b(head, head) + 2 * derv_a(head, relation) - 2 * derv_a(head, tail));
+		relation += alpha * factor * 
+			(derv_a(relation, relation) + derv_b(relation, relation) + 2 * derv_b(head, relation) - 2 * derv_a(relation, tail));
+		tail += alpha * factor * 
+			(derv_a(tail, tail) + derv_b(tail, tail) - 2 * derv_b(head, tail) - 2 * derv_b(relation, tail));
 
-		head_f -= alpha * factor_f * (derv_a(head_f, relation_f) - derv_a(head_f, tail_f));
-		relation_f -= alpha * factor_f * (derv_b(head_f, relation_f) - derv_a(relation_f, tail_f));
-		tail_f -= alpha * factor_f * (- derv_b(head_f, tail_f) - derv_b(relation_f, tail_f));
+		head_f -= alpha * factor_f * 
+			(derv_a(head_f, head_f) + derv_b(head_f, head_f) + 2 * derv_a(head_f, relation_f) - 2 * derv_a(head_f, tail_f));
+		relation_f -= alpha * factor_f * 
+			(derv_a(relation_f, relation_f) + derv_b(relation_f, relation_f) + 2 * derv_b(head_f, relation_f) - 2 * derv_a(relation_f, tail_f));
+		tail_f -= alpha * factor_f * 
+			(derv_a(tail_f, tail_f) + derv_b(tail_f, tail_f) - 2 * derv_b(head_f, tail_f) - 2 * derv_b(relation_f, tail_f));
 
 		orbit -= alpha *(factor - factor_f);
 
+		//if (norm(head) > 1.0)
+			head = normalise(head);
+
+		//if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		//if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		//if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		//if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
+class OrbitE_KHDA
+	:public OrbitModel
+{
+protected:
+	vector<vec>	embedding_weights;
+	function<double(const vec& a, const vec& b)>	kernel;	
+	function<vec(const vec& a, const vec& b)>		derv_a;
+	function<vec(const vec& a, const vec& b)>		derv_b;
+
+public:
+	OrbitE_KHDA(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		function<double(const vec& a, const vec& b)> kernel,
+		function<vec(const vec& a, const vec& b)> derv_a,
+		function<vec(const vec& a, const vec& b)> derv_b)
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold),kernel(kernel), derv_a(derv_a), derv_b(derv_b)
+	{
+		logging.record()<<"\t[Name]\tOrbitE H";
+
+		embedding_weights.resize(count_relation());
+		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
+		{
+			*i = (2*randu(dim,1)-1)*sqrt(6.0/dim);
+		}
+
+		for(auto i=embedding_orbit.begin(); i!=embedding_orbit.end(); ++i)
+		{
+			*i = (2*randu()-1)*sqrt(6.0/dim);
+		}
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = fabs(kernel(head, tail) + kernel(relation, tail) + kernel(head, weight)
+			+ kernel(relation, weight) - orbit);
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+		vec& weight_f = embedding_weights[triplet_f.second];
+
+		double factor = - sign(kernel(head, tail) + kernel(relation, tail) + kernel(head, weight)
+			+ kernel(relation, weight) - orbit);
+		double factor_f = - sign(kernel(head_f, tail_f) + kernel(relation_f, tail_f) + kernel(head_f, weight_f)
+			+ kernel(relation_f, weight_f) - orbit);
+
+		head += alpha * factor * (derv_a(head, tail) + derv_a(head, weight));
+		relation += alpha * factor * (derv_a(relation, tail) + derv_a(relation, weight));
+		tail += alpha * factor * (derv_b(relation, tail) + derv_b(head, tail));
+		weight += alpha * factor * (derv_b(head, weight) + derv_b(relation, weight));
+
+		head_f -= alpha * factor_f * (derv_a(head_f, tail_f) + derv_a(head_f, weight_f));
+		relation_f -= alpha * factor_f * (derv_a(relation_f, tail_f) + derv_a(relation_f, weight_f));
+		tail_f -= alpha * factor_f * (derv_b(relation_f, tail_f) + derv_b(head_f, tail_f));
+		weight_f -= alpha * factor_f * (derv_b(head_f, weight_f) + derv_b(relation_f, weight_f));
+
+		orbit -= alpha *(factor - factor_f);
+
+		if (norm(weight) > 1.0)
+			weight = normalise(weight);
 
 		if (norm(head) > 1.0)
 			head = normalise(head);
@@ -1087,4 +1199,137 @@ public:
 		if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
+};
+
+class OrbitE_KHDAN
+	:public OrbitModel
+{
+protected:
+	vector<vec>	embedding_weights;
+	function<double(const vec& a, const vec& b)>	kernel;	
+	function<vec(const vec& a, const vec& b)>		derv_a;
+	function<vec(const vec& a, const vec& b)>		derv_b;
+
+public:
+	OrbitE_KHDAN(	
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		function<double(const vec& a, const vec& b)> kernel,
+		function<vec(const vec& a, const vec& b)> derv_a,
+		function<vec(const vec& a, const vec& b)> derv_b)
+		:OrbitModel(dataset, task_type, logging_base_path, 
+		dim, alpha, training_threshold),kernel(kernel), derv_a(derv_a), derv_b(derv_b)
+	{
+		logging.record()<<"\t[Name]\tOrbitE H NK";
+
+		embedding_weights.resize(count_relation());
+		for(auto i=embedding_weights.begin(); i!=embedding_weights.end(); ++i)
+		{
+			*i = (2*randu(dim,1)-1)*sqrt(6.0/dim);
+		}
+
+		for(auto i=embedding_orbit.begin(); i!=embedding_orbit.end(); ++i)
+		{
+			*i = (2*randu()-1)*sqrt(6.0/dim);
+		}
+	}
+
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		double score = fabs(kernel(head + relation, tail + weight) - orbit);
+		return - score;
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& weight = embedding_weights[triplet.second];
+		double& orbit = embedding_orbit[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+		vec& weight_f = embedding_weights[triplet_f.second];
+
+		double factor = - sign(kernel(head + relation, tail + weight) - orbit);
+		double factor_f = - sign(kernel(head_f + relation_f, tail_f + weight_f) - orbit);
+
+		head += alpha * factor * derv_a(head + relation, tail + weight);
+		relation += alpha * factor * derv_a(head + relation, tail + weight);
+		tail += alpha * factor * derv_b(head + relation, tail + weight);
+		weight += alpha * factor * derv_b(head + relation, tail + weight);
+
+		head_f -= alpha * factor_f * derv_a(head_f + relation_f, tail_f + weight_f);
+		relation_f -= alpha * factor_f * derv_a(head_f + relation_f, tail_f + weight_f);
+		tail_f -= alpha * factor_f * derv_b(head_f + relation_f, tail_f + weight_f);
+		weight_f -= alpha * factor_f * derv_b(head_f + relation_f, tail_f + weight_f);
+
+		orbit -= alpha *(factor - factor_f);
+
+		if (norm(weight) > 1.0)
+			weight = normalise(weight);
+
+		if (norm(head) > 1.0)
+			head = normalise(head);
+
+		if (norm(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
+auto kernel_poly_2 = [&](const vec& a, const vec& b)
+{
+	return pow(as_scalar(a.t()*b) + 1, 2L);
+};
+
+auto derv_a_poly_2 = [&](const vec& a, const vec& b)
+{
+	return pow(as_scalar(a.t()*b) + 1, 1L) * 2L * b;
+};
+
+auto derv_b_poly_2 = [&](const vec& a, const vec& b)
+{
+	return pow(as_scalar(a.t()*b) + 1, 1L) * 2L * a;
+};
+
+auto kernel_poly_2_abs = [&](const vec& a, const vec& b)
+{
+	return pow(as_scalar(abs(a).t()*abs(b)) + 1, 2);
+};
+
+auto derv_a_poly_2_abs = [&](const vec& a, const vec& b)
+{
+	return pow(as_scalar(abs(a).t()*abs(b)) + 1, 2 - 1) * 2 * abs(b) % sign(a);
+};
+
+auto derv_b_poly_2_abs = [&](const vec& a, const vec& b)
+{
+	return pow(as_scalar(abs(a).t()*abs(b)) + 1, 2 - 1) * 2 * abs(a) % sign(b);
 };

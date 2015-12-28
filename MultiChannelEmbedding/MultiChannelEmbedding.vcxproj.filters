@@ -28,7 +28,9 @@
     <ClInclude Include="OrbitModel.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="LatentModel.hpp" />
+    <ClInclude Include="LatentModel.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Embedding.cpp">
@@ -36,6 +38,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
+    <None Include="nvblas.conf" />
   </ItemGroup>
 </Project>

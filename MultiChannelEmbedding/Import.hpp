@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <arma>
+#include <armadillo>
 #include <map>
 #include <set>
 #include <string>

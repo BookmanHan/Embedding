@@ -190,15 +190,24 @@ protected:
 	vector<vec>		entity;
 	const int		dim;
 	const double	alpha;
+	const double	training_threshold;
+
 public:
 	PropergationModel(		
 		const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
 		int dim,
-		double alpha)
-		:Model(dataset, task_type, logging_base_path), dim(dim), alpha(alpha)
+		double alpha,
+		double training_threshold)
+		:Model(dataset, task_type, logging_base_path), 
+		dim(dim), alpha(alpha), training_threshold(training_threshold)
 	{
+		logging.record()<<"\t[Dimension]\t"<<dim;
+		logging.record()<<"\t[Learning Rate]\t"<<alpha;
+		logging.record()<<"\t[Training Threshold]\t"<<training_threshold;
+		logging.record()<<"\t[Name]\tPropergation Model";
+
 		relation_in.resize(count_relation());
 		for_each(relation_in.begin(), relation_in.end(), 
 			[&](vec & elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
@@ -221,9 +230,14 @@ public:
 		return - score;
 	}
 
-	//Negative Sampling...
 	virtual void train_triplet(const pair<pair<int, int>,int>& triplet)
 	{
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
 		vec factor_vec = - sign(entity[triplet.first.first] % relation_in[triplet.second] 
 		- entity[triplet.first.second] % relation_out[triplet.second]);
 
@@ -236,10 +250,26 @@ public:
 		relation_out[triplet.second] -=
 			alpha * factor_vec % entity[triplet.first.second];
 
-		//if (norm(entity[triplet.first.first]) > 1)
+		factor_vec = - sign(entity[triplet_f.first.first] % relation_in[triplet_f.second] 
+		- entity[triplet_f.first.second] % relation_out[triplet_f.second]);
+
+		entity[triplet_f.first.first] -= 
+			alpha * factor_vec % relation_in[triplet_f.second];
+		relation_in[triplet_f.second] -=
+			alpha * factor_vec % entity[triplet_f.first.first];
+		entity[triplet_f.first.second] += 
+			alpha * factor_vec % relation_out[triplet_f.second];
+		relation_out[triplet_f.second] +=
+			alpha * factor_vec % entity[triplet_f.first.second];
+
+		if (norm(entity[triplet.first.first]) > 1)
 			entity[triplet.first.first] = normalise(entity[triplet.first.first]);
-		//if (norm(entity[triplet.first.second]) > 1)
+		if (norm(entity[triplet.first.second]) > 1)
 			entity[triplet.first.second] = normalise(entity[triplet.first.second]);
+		if (norm(entity[triplet_f.first.first]) > 1)
+			entity[triplet_f.first.first] = normalise(entity[triplet_f.first.first]);
+		if (norm(entity[triplet_f.first.second]) > 1)
+			entity[triplet_f.first.second] = normalise(entity[triplet_f.first.second]);
 		//if (norm(relation_in[triplet.second]) > 1)
 			relation_in[triplet.second] = normalise(relation_in[triplet.second]);
 		//if (norm(relation_out[triplet.second]) > 1)
