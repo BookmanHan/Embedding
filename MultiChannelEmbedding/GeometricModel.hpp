@@ -1418,7 +1418,8 @@ public:
 			train_cluster_once(triplet, triplet_f, c, prob_true, prob_false, alpha);
 		}
 
-		double prob_new_component = CRP_factor * exp(-sum(abs(head - tail)));
+		double prob_new_component = CRP_factor * exp(-sum(abs(head - tail))) 
+			/ (variance[triplet.first.first] + variance[triplet.first.second] + 1);
 
 		if (randu() < prob_new_component/(prob_new_component + prob_true) 
 			&& size_clusters[triplet.second] <= 20
@@ -1428,7 +1429,7 @@ public:
 			{
 				cout<<"A";
 				weights_clusters[triplet.second][size_clusters[triplet.second]] = CRP_factor;
-				embedding_clusters[triplet.second][size_clusters[triplet.second]] = (2*randu(dim,1)-1)*sqrt(6.0/dim);
+				embedding_clusters[triplet.second][size_clusters[triplet.second]] = tail - head ;//(2*randu(dim,1)-1)*sqrt(6.0/dim);
 				++ size_clusters[triplet.second];
 			}
 		}

@@ -1078,19 +1078,19 @@ public:
 
 		orbit -= alpha *(factor - factor_f);
 
-		//if (norm(head) > 1.0)
+		if (norm(head) > 1.0)
 			head = normalise(head);
 
-		//if (norm(tail) > 1.0)
+		if (norm(tail) > 1.0)
 			tail = normalise(tail);
 
-		//if (norm(relation) > 1.0)
+		if (norm(relation) > 1.0)
 			relation = normalise(relation);
 
-		//if (norm(head_f) > 1.0)
+		if (norm(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		//if (norm(tail_f) > 1.0)
+		if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -1306,30 +1306,30 @@ public:
 
 auto kernel_poly_2 = [&](const vec& a, const vec& b)
 {
-	return pow(as_scalar(a.t()*b) + 1, 2L);
+	return pow(as_scalar(a.t()*b) - 2, 2);
 };
 
 auto derv_a_poly_2 = [&](const vec& a, const vec& b)
 {
-	return pow(as_scalar(a.t()*b) + 1, 1L) * 2L * b;
+	return pow(as_scalar(a.t()*b) - 2, 1) * 2 * b;
 };
 
 auto derv_b_poly_2 = [&](const vec& a, const vec& b)
 {
-	return pow(as_scalar(a.t()*b) + 1, 1L) * 2L * a;
+	return pow(as_scalar(a.t()*b) - 2, 1) * 2 * a;
 };
 
 auto kernel_poly_2_abs = [&](const vec& a, const vec& b)
 {
-	return pow(as_scalar(abs(a).t()*abs(b)) + 1, 2);
+	return pow(as_scalar(abs(a).t()*abs(b)) - 1, 2);
 };
 
 auto derv_a_poly_2_abs = [&](const vec& a, const vec& b)
 {
-	return pow(as_scalar(abs(a).t()*abs(b)) + 1, 2 - 1) * 2 * abs(b) % sign(a);
+	return pow(as_scalar(abs(a).t()*abs(b)) - 1, 2 - 1) * 2 * abs(b) % sign(a);
 };
 
 auto derv_b_poly_2_abs = [&](const vec& a, const vec& b)
 {
-	return pow(as_scalar(abs(a).t()*abs(b)) + 1, 2 - 1) * 2 * abs(a) % sign(b);
+	return pow(as_scalar(abs(a).t()*abs(b)) - 1, 2 - 1) * 2 * abs(a) % sign(b);
 };

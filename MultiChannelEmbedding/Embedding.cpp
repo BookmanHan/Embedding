@@ -17,22 +17,28 @@
 //TransG-H-WN11-100-84%
 //TransG-H-WN11-100-83.7%
 //TransE-FB15K-50-19%.
+
+//Gaussian Positive sigma = 1.0, dim = 100
+
 int main(int argc, char* argv[])
 {
 	srand(time(nullptr));
-	//omp_set_num_threads(4);
+	omp_set_num_threads(6);
 
-	int sigma = 2.0;
+	Model* model = nullptr; 
 
-	Model* model = nullptr;
-
-	model = new OrbitE_KS(WN18, LinkPredictionTail, report_path, 400, 0.001, 3.0, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
-	model->logging.record()<<"Using Gaussian/Laplician Kernel = "<<sigma;
-	model->run(1000);
+	model = new OrbitE_KS(FB15K, LinkPredictionTail, report_path, 400, 0.001, 0.75, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
+	model->run(8000);
 	model->test(1);
-	model->test(2);
-	model->test();
 	delete model;
+
+	//model = new OrbitE_KS(FB15K, LinkPredictionTail, report_path, 400, 0.002, 0.75, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
+	//for(auto i=1; i<8; ++i)
+	//{
+	//	model->run(500*i);
+	//	model->test(1);
+	//}
+	//delete model;
 
 	//model = new OrbitE_KS(FB15K, LinkPredictionHead, report_path, 500, 0.001, 0.8, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
 	//model->logging.record()<<"Using Gaussian/Laplician Kernel = "<<sigma;

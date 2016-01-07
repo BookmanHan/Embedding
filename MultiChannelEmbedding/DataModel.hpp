@@ -108,18 +108,19 @@ public:
 			elem /= data_train.size();
 		}
 
+		double threshold = 1.5;
 		relation_type.resize(set_relation.size());
 		for(auto i=0; i<set_relation.size(); ++i)
 		{
-			if (relation_tph[i]<1.5 && relation_hpt[i]<1.5)
+			if (relation_tph[i]<threshold && relation_hpt[i]<threshold)
 			{
 				relation_type[i] = 1;
 			}
-			else if (relation_hpt[i] <1.5 && relation_tph[i] >= 1.5)
+			else if (relation_hpt[i] <threshold && relation_tph[i] >= threshold)
 			{
 				relation_type[i] = 2;
 			}
-			else if (relation_hpt[i] >=1.5 && relation_tph[i] < 1.5)
+			else if (relation_hpt[i] >=threshold && relation_tph[i] < threshold)
 			{
 				relation_type[i] = 3;
 			}
