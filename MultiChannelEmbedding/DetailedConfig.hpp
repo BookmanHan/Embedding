@@ -8,4 +8,5 @@ const Dataset WN11("WN11", "D:\\Data\\Knowledge Embedding\\WN11\\", "train.txt",
 const Dataset WN18("WN18", "D:\\Data\\Knowledge Embedding\\WN18\\", "train.txt", "dev.txt", "test.txt", true);
 const Dataset Wordnet("Wordnet", "D:\\Data\\Knowledge Embedding\\Wordnet\\", "train.txt", "dev.txt", "test.txt", false);
 const Dataset Freebase("Freebase", "D:\\Data\\Knowledge Embedding\\Freebase\\", "train.txt", "dev.txt", "test.txt", false);
+const Dataset FB15KT("FB15KT", "D:\\Data\\Joint Knowledge and Text\\Release\\", "train.txt", "valid.txt", "test.txt", true);
 const string report_path = "D:\\สตั้\\Report\\Experiment.Embedding\\";

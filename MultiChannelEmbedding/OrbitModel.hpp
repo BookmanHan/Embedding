@@ -1318,18 +1318,3 @@ auto derv_b_poly_2 = [&](const vec& a, const vec& b)
 {
 	return pow(as_scalar(a.t()*b) - 2, 1) * 2 * a;
 };
-
-auto kernel_poly_2_abs = [&](const vec& a, const vec& b)
-{
-	return pow(as_scalar(abs(a).t()*abs(b)) - 1, 2);
-};
-
-auto derv_a_poly_2_abs = [&](const vec& a, const vec& b)
-{
-	return pow(as_scalar(abs(a).t()*abs(b)) - 1, 2 - 1) * 2 * abs(b) % sign(a);
-};
-
-auto derv_b_poly_2_abs = [&](const vec& a, const vec& b)
-{
-	return pow(as_scalar(abs(a).t()*abs(b)) - 1, 2 - 1) * 2 * abs(a) % sign(b);
-};

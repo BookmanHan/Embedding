@@ -6,79 +6,23 @@
 #include "LatentModel.hpp"
 #include <omp.h>
 
-//TODO: 
-//1.TransG : new componenet = tail - head;
-//2.TransG_Hirachical.
-
-//TransE-WN18-100-57%
-//TransE-WN18-500-89%
-//TransG-WN11-10-70%
-//TransG-WN11-30-80%
-//TransG-H-WN11-100-84%
-//TransG-H-WN11-100-83.7%
-//TransE-FB15K-50-19%.
-
-//Gaussian Positive sigma = 1.0, dim = 100
-
 int main(int argc, char* argv[])
 {
 	srand(time(nullptr));
-	omp_set_num_threads(6);
+	//omp_set_num_threads(1);
 
-	Model* model = nullptr; 
+	Model* model = nullptr;
 
-	model = new OrbitE_KS(FB15K, LinkPredictionTail, report_path, 400, 0.001, 0.75, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
-	model->run(8000);
-	model->test(1);
-	delete model;
+	model = new OrbitE_HDA(FB15KT, LinkPredictionTail, report_path, 1000, 0.01, 0.2);
+	model->run(1000);
+	model->test();
+	model->run(4000);
+	model->test();
 
-	//model = new OrbitE_KS(FB15K, LinkPredictionTail, report_path, 400, 0.002, 0.75, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
-	//for(auto i=1; i<8; ++i)
-	//{
-	//	model->run(500*i);
-	//	model->test(1);
-	//}
-	//delete model;
-
-	//model = new OrbitE_KS(FB15K, LinkPredictionHead, report_path, 500, 0.001, 0.8, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
-	//model->logging.record()<<"Using Gaussian/Laplician Kernel = "<<sigma;
-	//model->run(7500);
-	//model->test(1);
-	//model->test();
-	//delete model;
-
-	//model = new OrbitE_H(FB15K, LinkPredictionTail, report_path, 400, 0.001, 3.0); 
-	//model->run(500);
-	//model->test(1);
-	//model->test();
-	//delete model;
-
-	//model = new OrbitE_H(FB15K, LinkPredictionHead, report_path, 400, 0.001, 4.0); 
-	//model->run(500);
-	//model->test(10);
-	//model->test(1);
-	//delete model;
-
-	//model = new OrbitE_H(WN18, LinkPredictionTail, report_path, 400, 0.001, 4.0); 
-	//model->run(500);
-	//model->test(10);
-	//model->test(1);
-	//delete model;
-
-	//Model* model = new TransE(FB13, DrawEmbedding, report_path, 2, 0.01, 10.0);
-	//model->run(100);
-	//for(auto i=0; i<13; ++i)
-	//{
-	//	model->draw("E:\\Freebase.", 250, i);
-	//}
-	//delete model;
-
-	//Model*	model = nullptr;
-	//model = new TransG_Hiracherical(FB13, TransM_ReportClusterNumber, report_path, 400, 0.001, 3.0, 1, 0.1, 5);
-	//model->run(300);
-	//model->report("");
-	//model->test();
-	//delete model;
+	delete model;	
+//	model = new OrbitE_KHDAN(FB13, TripletClassification, report_path, 100, 0.01, 0.2, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
+//	model->run(15000);
+//	delete model;
 
 	return 0;
 }

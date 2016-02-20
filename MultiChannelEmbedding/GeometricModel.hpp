@@ -219,8 +219,8 @@ public:
 		if (i == j)
 			return;
 
-		embedding_relation[i] -= factor * sign(as_scalar(embedding_relation[i].t()*embedding_relation[j])) * embedding_relation[j];
-		embedding_relation[j] -= factor * sign(as_scalar(embedding_relation[i].t()*embedding_relation[j])) * embedding_relation[i];
+		embedding_relation[i] -= alpha * factor * sign(as_scalar(embedding_relation[i].t()*embedding_relation[j])) * embedding_relation[j];
+		embedding_relation[j] -= alpha * factor * sign(as_scalar(embedding_relation[i].t()*embedding_relation[j])) * embedding_relation[i];
 	}
 
 	virtual void entity_reg(int i, int j, double factor)
@@ -228,8 +228,8 @@ public:
 		if (i == j)
 			return;
 
-		embedding_entity[i] -= factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[j];
-		embedding_entity[j] -= factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[i];
+		embedding_entity[i] -= alpha * factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[j];
+		embedding_entity[j] -= alpha * factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[i];
 	}
 };
 
@@ -572,6 +572,144 @@ public:
 
 					mat_r[triplet.second] += 
 						 0.001 * (head + relation - tail) * (head + relation - tail).t();
+					- 0.001 * (head_f + relation_f - tail_f) * (head_f + relation_f - tail_f).t();
+				}
+				for_each(mat_r.begin(), mat_r.end(), [=](mat& elem){elem = elem.i();});
+			}
+		}
+	}
+
+	virtual void report( const string& filename ) const
+	{
+		if (task_type == TransA_ReportWeightes)
+		{
+			for(auto i=mat_r.begin(); i!=mat_r.end(); ++i)
+			{
+				cout<<data_model.relation_id_to_name[i-mat_r.begin()]<<":";
+
+				vector<double> weights;
+				double total = 0;
+				mat mat_l, mat_u;
+				lu(mat_l, mat_u, *i);
+				for(auto i=0; i<dim; ++i)
+				{
+					weights.push_back(mat_u(i, i));
+					total += mat_u(i, i);
+				}
+				sort(weights.begin(), weights.end());
+				cout<<weights.back()<<",";
+				cout<<weights[dim/2]<<",";
+				cout<<total;
+				cout<<endl;
+			}
+		}
+	}
+};
+
+class TransA_PSD_ESS
+	:public TransE
+{
+protected:
+	vector<mat>	mat_r;
+	const double		ESS_factor;
+
+public:
+	TransA_PSD_ESS(
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double ESS_factor)
+		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold), ESS_factor(ESS_factor)
+	{
+		logging.record()<<"\t[Name]\tTransA";
+		mat_r.resize(count_relation());
+		for_each(mat_r.begin(), mat_r.end(), [&](mat& m){ m = eye(dim,dim);});
+	}
+
+public:
+	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet )
+	{
+		vec error = embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- embedding_entity[triplet.first.second];
+
+		return -as_scalar((error).t()*mat_r[triplet.second]*mat_r[triplet.second].t()*(error));
+	}
+
+	virtual double training_prob_triplets( const pair<pair<int, int>,int>& triplet )
+	{
+		vec error = embedding_entity[triplet.first.first]
+		+ embedding_relation[triplet.second]
+		- embedding_entity[triplet.first.second];
+
+		return - sum(abs(error));
+	}
+
+	virtual void train_triplet( const pair<pair<int, int>,int>& triplet )
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		mat& mat_rel = mat_r[triplet.second];
+
+		pair<pair<int, int>,int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (training_prob_triplets(triplet) - training_prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		head -= alpha * sign(head + relation - tail);
+		tail += alpha * sign(head + relation - tail);
+		relation -= alpha * sign(head + relation - tail);
+		head_f += alpha * sign(head_f + relation_f - tail_f);
+		tail_f -= alpha * sign(head_f + relation_f - tail_f);
+		relation_f += alpha * sign(head_f + relation_f - tail_f);
+
+		head = normalise(head);
+		tail = normalise(tail);
+		relation = normalise(relation);
+		head_f = normalise(head_f);
+		tail_f = normalise(tail_f);
+
+		relation_reg(triplet.second, rand()%count_relation(), ESS_factor);
+		entity_reg(triplet.first.first, triplet.first.second, ESS_factor);
+		entity_reg(triplet.first.first, rand()%count_entity(), ESS_factor);
+		entity_reg(triplet.first.second, rand()%count_entity(), ESS_factor);
+	}
+
+	virtual void train( bool last_time)
+	{
+		TransE::train(alpha);	
+
+		if ( last_time || task_type == TripletClassification)
+		{
+			for_each(mat_r.begin(), mat_r.end(), [=](mat& elem){elem = eye(dim, dim);});
+			//for(auto i=0; i<10; ++i)
+			{
+				for(auto i=data_model.data_train.begin(); i!=data_model.data_train.end(); ++i)
+				{
+					auto triplet = *i;
+
+					vec& head = embedding_entity[triplet.first.first];
+					vec& tail = embedding_entity[triplet.first.second];
+					vec& relation = embedding_relation[triplet.second];
+
+					pair<pair<int, int>,int> triplet_f;
+					data_model.sample_false_triplet(triplet, triplet_f);
+
+					vec& head_f = embedding_entity[triplet_f.first.first];
+					vec& tail_f = embedding_entity[triplet_f.first.second];
+					vec& relation_f = embedding_relation[triplet_f.second];		
+
+					mat_r[triplet.second] += 
+						0.001 * (head + relation - tail) * (head + relation - tail).t();
 					- 0.001 * (head_f + relation_f - tail_f) * (head_f + relation_f - tail_f).t();
 				}
 				for_each(mat_r.begin(), mat_r.end(), [=](mat& elem){elem = elem.i();});
