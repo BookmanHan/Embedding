@@ -165,7 +165,7 @@ public:
 			<<", Best = "<<best_triplet_result;
 	}
 
-	void test_link_prediction(int hit_rank = 10)
+	void test_link_prediction(int hit_rank = 10, const bool is_relation = false)
 	{
 		double mean = 0;
 		double hits = 0;
@@ -197,13 +197,13 @@ public:
 			int rmean = 0;
 			double score_i = prob_triplets(*i);
 
-			if (task_type == LinkPredictionRelation)
+			if (task_type == LinkPredictionRelation || is_relation == true)
 			{
 				for(auto j=0; j!=data_model.set_relation.size(); ++j)
 				{
 					t.second = j;
 
-					if (score_i > prob_triplets(t))
+					if (score_i >= prob_triplets(t))
 						continue;
 
 					++ rmean;
@@ -221,7 +221,7 @@ public:
 					else
 						t.first.second = j;
 
-					if (score_i > prob_triplets(t))
+					if (score_i >= prob_triplets(t))
 						continue;
 
 					++ rmean;

@@ -10,32 +10,13 @@
 int main(int argc, char* argv[])
 {
 	srand(time(nullptr));
-	//omp_set_num_threads(1);
+	//omp_set_num_threads(4);
 
 	Model* model = nullptr;
-	
-	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 0.2);
-	model->run(1000);
-	model->test();
-	delete model;
 
-	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 0.5);
-	model->run(1000);
-	model->test();
-	delete model;
-
-	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 0.8);
-	model->run(1000);
-	model->test();
-	delete model;
-
-	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 1.2);
-	model->run(1000);
-	model->test();
-	delete model;
-
-	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 1.5);
-	model->run(1000);
+	model = new SemanticModel
+		(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 10, 0.01, 1.8);
+	model->run(500);
 	model->test();
 	delete model;
 

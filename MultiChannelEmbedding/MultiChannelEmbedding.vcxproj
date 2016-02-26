@@ -73,6 +73,18 @@
       <Configuration>Run.3</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Run|ARM">
+      <Configuration>Run</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Run|Win32">
+      <Configuration>Run</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Run|x64">
+      <Configuration>Run</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3A03DF5C-4B95-4B56-877A-EE021EAF207D}</ProjectGuid>
@@ -113,6 +125,16 @@
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <UseIntelTBB>true</UseIntelTBB>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Run|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseIntelMKL>Parallel</UseIntelMKL>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
+    <UseIntelTBB>true</UseIntelTBB>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Python|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -124,6 +146,16 @@
     <UseIntelTBB>true</UseIntelTBB>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseIntelMKL>Parallel</UseIntelMKL>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
+    <UseIntelTBB>true</UseIntelTBB>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Run|ARM'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
@@ -202,6 +234,15 @@
     <UseIntelMKL>No</UseIntelMKL>
     <UseILP64Interfaces>false</UseILP64Interfaces>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Run|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseIntelMKL>No</UseIntelMKL>
+    <UseILP64Interfaces>false</UseILP64Interfaces>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Python|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -250,10 +291,16 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Run|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Python|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Run|ARM'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Python|ARM'" Label="PropertySheets">
@@ -278,6 +325,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Run|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Python|x64'" Label="PropertySheets">
@@ -311,6 +361,12 @@
     <LibraryWPath>C:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryWPath)</LibraryWPath>
     <ReferencePath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Run|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryPath)</LibraryPath>
+    <LibraryWPath>C:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryWPath)</LibraryWPath>
+    <ReferencePath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(ReferencePath)</ReferencePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Python|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryPath)</LibraryPath>
@@ -318,6 +374,12 @@
     <ReferencePath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryPath)</LibraryPath>
+    <LibraryWPath>C:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryWPath)</LibraryWPath>
+    <ReferencePath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(ReferencePath)</ReferencePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Run|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryPath)</LibraryPath>
     <LibraryWPath>C:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2016.0.110\windows\mkl\lib\ia32_win;$(LibraryWPath)</LibraryWPath>
@@ -358,6 +420,11 @@
     <IncludePath>C:\Program Files\Python27\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\lib\intel64;$(LibraryPath)</LibraryPath>
+    <ReferencePath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include;$(ReferencePath)</ReferencePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Run|x64'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\mkl\lib\intel64;$(LibraryPath)</LibraryPath>
     <ReferencePath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include;$(ReferencePath)</ReferencePath>
@@ -457,6 +524,36 @@
       <AdditionalDependencies>mkl_rt.lib;mkl_blas95.lib;mkl_core.lib;mkl_lapack95.lib;mkl_intel_c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Run|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <GenerateAlternateCodePaths>AVX2</GenerateAlternateCodePaths>
+      <UseProcessorExtensions>AVX2</UseProcessorExtensions>
+      <OpenMP>GenerateParallelCode</OpenMP>
+      <Cpp0xSupport>true</Cpp0xSupport>
+      <AdditionalOptions> /Qopenmp -I"%MKLROOT%"/include %(AdditionalOptions)</AdditionalOptions>
+      <OffloadOpenMPTarget>HOSTTarget</OffloadOpenMPTarget>
+      <OptimizeForWindowsApplication>true</OptimizeForWindowsApplication>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableMatrixMultiplyLibraryCall>Default</EnableMatrixMultiplyLibraryCall>
+      <Parallelization>true</Parallelization>
+      <CallingConvention>Cdecl</CallingConvention>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>mkl_rt.lib;mkl_blas95.lib;mkl_core.lib;mkl_lapack95.lib;mkl_intel_c.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Python|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -487,6 +584,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <GenerateAlternateCodePaths>AVX2</GenerateAlternateCodePaths>
+      <UseProcessorExtensions>AVX2</UseProcessorExtensions>
+      <OpenMP>GenerateParallelCode</OpenMP>
+      <Cpp0xSupport>true</Cpp0xSupport>
+      <AdditionalOptions> /Qopenmp -I"%MKLROOT%"/include %(AdditionalOptions)</AdditionalOptions>
+      <OffloadOpenMPTarget>HOSTTarget</OffloadOpenMPTarget>
+      <OptimizeForWindowsApplication>true</OptimizeForWindowsApplication>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableMatrixMultiplyLibraryCall>Default</EnableMatrixMultiplyLibraryCall>
+      <Parallelization>true</Parallelization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>mkl_intel_c.lib;mkl_core.lib;mkl_intel_thread.lib;mkl_blas95.lib;mkl_lapack95.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Run|ARM'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
@@ -688,6 +814,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <GenerateAlternateCodePaths>AVX2</GenerateAlternateCodePaths>
+      <UseProcessorExtensions>AVX2</UseProcessorExtensions>
+      <Parallelization>true</Parallelization>
+      <GPUArch>Haswell</GPUArch>
+      <OffloadArch>OffloadArchHaswellVisa31</OffloadArch>
+      <OffloadOpenMP>Default</OffloadOpenMP>
+      <OffloadOpenMPTarget>Default</OffloadOpenMPTarget>
+      <OpenMP>None</OpenMP>
+      <Cpp0xSupport>true</Cpp0xSupport>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>cublas.lib;cublas_device.lib;cudart.lib;nvblas.lib;mkl_rt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Run|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
