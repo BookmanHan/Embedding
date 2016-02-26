@@ -10,3 +10,4 @@ const Dataset Wordnet("Wordnet", "D:\\Data\\Knowledge Embedding\\Wordnet\\", "tr
 const Dataset Freebase("Freebase", "D:\\Data\\Knowledge Embedding\\Freebase\\", "train.txt", "dev.txt", "test.txt", false);
 const Dataset FB15KT("FB15KT", "D:\\Data\\Joint Knowledge and Text\\Release\\", "train.txt", "valid.txt", "test.txt", true);
 const string report_path = "D:\\สตั้\\Report\\Experiment.Embedding\\";
+const string semantic_vector_file = "D:\\Data\\Knowledge Embedding\\FB15K\\topics.100.bsd";

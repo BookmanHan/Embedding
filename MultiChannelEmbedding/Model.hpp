@@ -230,11 +230,6 @@ public:
 					{
 						++ frmean;
 					}
-
-					//if (frmean > hit_rank + 1)
-					//{
-					//	break;
-					//}
 				}
 			}
 

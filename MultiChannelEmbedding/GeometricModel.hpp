@@ -995,7 +995,7 @@ public:
 				++ count_cluster[n];
 				total_number += n;
 			}
-			copy(count_cluster.begin(), count_cluster.end(), ostream_iterator<int>(cout, "\n"));
+			copy(count_cluster.begin(), count_cluster.end(), std::ostream_iterator<int>(cout, "\n"));
 			cout<<total_number/count_relation()<<endl;
 			cout<<total_number<<endl;
 			return;

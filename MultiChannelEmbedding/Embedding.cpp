@@ -4,6 +4,7 @@
 #include "GeometricModel.hpp"
 #include "OrbitModel.hpp"
 #include "LatentModel.hpp"
+#include "SemanticModel.hpp"
 #include <omp.h>
 
 int main(int argc, char* argv[])
@@ -12,17 +13,31 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(1);
 
 	Model* model = nullptr;
-
-	model = new OrbitE_HDA(FB15KT, LinkPredictionTail, report_path, 1000, 0.01, 0.2);
+	
+	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 0.2);
 	model->run(1000);
 	model->test();
-	model->run(4000);
-	model->test();
+	delete model;
 
-	delete model;	
-//	model = new OrbitE_KHDAN(FB13, TripletClassification, report_path, 100, 0.01, 0.2, kernel_poly_2, derv_a_poly_2, derv_b_poly_2);
-//	model->run(15000);
-//	delete model;
+	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 0.5);
+	model->run(1000);
+	model->test();
+	delete model;
+
+	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 0.8);
+	model->run(1000);
+	model->test();
+	delete model;
+
+	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 1.2);
+	model->run(1000);
+	model->test();
+	delete model;
+
+	model = new SemanticModel(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 100, 0.01, 1.5);
+	model->run(1000);
+	model->test();
+	delete model;
 
 	return 0;
 }

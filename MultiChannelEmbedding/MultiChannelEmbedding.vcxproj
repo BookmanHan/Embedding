@@ -78,6 +78,7 @@
     <ProjectGuid>{3A03DF5C-4B95-4B56-877A-EE021EAF207D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>MultiChannelEmbedding</RootNamespace>
+    <ProjectName>Embedding</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -828,9 +829,7 @@
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="ModelConfig.hpp" />
     <ClInclude Include="OrbitModel.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="nvblas.conf" />
+    <ClInclude Include="SemanticModel.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -16,6 +16,7 @@
 #include <bitset>
 #include <queue>
 #include <functional>
+#include <iterator>
 
 using namespace std;
 using namespace arma;
