@@ -1,3 +1,4 @@
+#define SSD_LOAD
 #include "Import.hpp"
 #include "Model.hpp"
 #include "DetailedConfig.hpp"
@@ -13,10 +14,11 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(4);
 
 	Model* model = nullptr;
-
-	model = new SemanticModel
-		(FB15K, LinkPredictionTail, report_path, semantic_vector_file, 10, 0.01, 1.8);
-	model->run(500);
+	
+	model = new SemanticModel_Joint
+		(WN18, LinkPredictionTail, report_path, semantic_vfile_WN18, semantic_tfile_WN18, 
+			100, 0.001, 2.5, -0.2, 0.2);
+	model->run(6000);
 	model->test();
 	delete model;
 

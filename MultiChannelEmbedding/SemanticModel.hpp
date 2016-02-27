@@ -14,6 +14,9 @@ class SemanticModel
 protected:
 	vector<vec>	v_semantics;
 
+protected:
+	const double balance;
+
 public:
 	SemanticModel(
 		const Dataset& dataset,
@@ -22,19 +25,22 @@ public:
 		const string& semantic_file,
 		int dim,
 		double alpha,
-		double training_threshold)
-		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold)
+		double training_threshold,
+		double balance=0.1)
+		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold),
+		balance(balance)
 	{
 		logging.record() << "\t[Name]\tSemanticModel.TransE";
 		logging.record() << "\t[Dimension]\t" << dim;
 		logging.record() << "\t[Learning Rate]\t" << alpha;
 		logging.record() << "\t[Training Threshold]\t" << training_threshold;
 		logging.record() << "\t[Topic Model]\tLSI";
+		logging.record() << "\t[Balance]\t" << balance;
 
 		v_semantics.resize(count_entity()+10);
 		for (auto i = v_semantics.begin(); i != v_semantics.end(); ++i)
 		{
-			i->resize(dim);
+			*i = randu(dim);
 		}
 
 		fstream fin(semantic_file);
@@ -49,12 +55,15 @@ public:
 				fin >> v_semantics[pos][i];
 			}
 		}
+		fin.close();
+
+		cout << "File Loaded." << endl;
 	}
 
 public:
 	virtual const vec semantic_composition(const pair<pair<int, int>, int>& triplet) const
 	{
-		return (v_semantics[triplet.first.first] + v_semantics[triplet.first.second]);
+		return normalise(v_semantics[triplet.first.first] + v_semantics[triplet.first.second]);
 	}
 
 	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet)
@@ -65,7 +74,8 @@ public:
 			+ embedding_relation[triplet.second]
 			- embedding_entity[triplet.first.second];
 
-		return -sum(abs(error - as_scalar(semantic.t()*error)*semantic));
+		return	- balance * sum(abs(error - as_scalar(semantic.t()*error)*semantic))
+				- sum(abs(error));
 	}
 	
 	virtual void train_triplet(const pair<pair<int, int>, int>& triplet)
@@ -75,7 +85,7 @@ public:
 		vec& relation = embedding_relation[triplet.second];
 
 		pair<pair<int, int>, int> triplet_f;
-		data_model.sample_false_triplet(triplet, triplet_f);
+		data_model.sample_false_triplet_relation(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
 			return;
@@ -89,18 +99,18 @@ public:
 		double projection = as_scalar(semantic.t()*error);
 		vec grad = error - projection * (2 - projection) * semantic;
 		
-		head -= alpha * grad;
-		tail += alpha * grad;
-		relation -= alpha * grad;
+		head -= alpha * balance * grad + alpha * sign(error);
+		tail += alpha * balance * grad + alpha * sign(error);
+		relation -= alpha * balance * grad + alpha * sign(error);
 
 		vec semantic_f = semantic_composition(triplet_f);
 		vec error_f = head_f + relation_f - tail_f;
 		double projection_f = as_scalar(semantic_f.t()*error_f);
 		vec grad_f = error_f - projection_f * (2 - projection_f) * semantic_f;
 
-		head_f += alpha * grad_f;
-		tail_f -= alpha * grad_f;
-		relation_f += alpha * grad_f;
+		head_f += alpha * balance * grad_f + alpha * sign(error_f);
+		tail_f -= alpha * balance * grad_f + alpha * sign(error_f);
+		relation_f += alpha * balance * grad_f + alpha * sign(error_f);
 
 		if (norm(head) > 1.0)
 			head = normalise(head);
@@ -120,16 +130,15 @@ public:
 };
 
 class SemanticModel_Joint
-	: public TransE
+	: public SemanticModel
 {
 protected:
 	vector<vector<string>>		documents;
-	vector<vec>					topic_documents;
 	map<string, vec>			topic_words;
 	vector<string>				words;
 
 protected:
-	const double balance;
+	const double factor;
 
 public:
 	SemanticModel_Joint(
@@ -137,28 +146,21 @@ public:
 		const TaskType& task_type,
 		const string& logging_base_path,
 		const string& semantic_file,
+		const string& semantic_file_raw,
 		int dim,
 		double alpha,
 		double training_threshold,
-		double balance)
-		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold),
-		balance(balance)
+		double balance,
+		double factor)
+		:SemanticModel(dataset, task_type, logging_base_path, semantic_file, dim, alpha, training_threshold, balance),
+		factor(factor)
 	{
-		logging.record() << "\t[Name]\tSemanticModel Joint";
-		logging.record() << "\t[Dimension]\t" << dim;
-		logging.record() << "\t[Learning Rate]\t" << alpha;
-		logging.record() << "\t[Training Threshold]\t" << training_threshold;
-		logging.record() << "\t[Topic Model]\tLSI";
+		logging.record() << "\t[Name]\tSemanticModel.Joint";
+		logging.record() << "\t[Factor]\t" << factor;
 
-		topic_documents.resize(count_entity()+10);
-		documents.resize(count_entity()+10);
+		documents.resize(count_entity() + 10);
 
-		for (auto i = topic_documents.begin(); i != topic_documents.end(); ++i)
-		{
-			*i = randu(dim);
-		}
-
-		fstream fin(semantic_file);
+		fstream fin(semantic_file_raw);
 		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
 		while (!fin.eof())
 		{
@@ -186,54 +188,36 @@ public:
 			}
 
 			documents[data_model.entity_name_to_id.find(entity_name)->second] = entity_description;
-			topic_documents.push_back(randu(dim));
 		}
+		fin.close();
+
+		cout << "File Loaded." << endl;
 	}
 
 public:
-	virtual const vec semantic_composition(const pair<pair<int, int>, int>& triplet) const
-	{
-		return normalise(topic_documents[triplet.first.first] + topic_documents[triplet.first.second]);
-	}
-
-	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet)
-	{
-		vec semantic = semantic_composition(triplet);
-
-		vec error = embedding_entity[triplet.first.first]
-			+ embedding_relation[triplet.second]
-			- embedding_entity[triplet.first.second];
-
-		return -sum(pow(error - as_scalar(semantic.t()*error)*semantic, 2));
-	}
-
 	virtual void train_topic()
 	{
 #pragma omp parallel for
 		for (auto idoc = documents.begin(); idoc != documents.end(); ++idoc)
 		{
-			vec& v_doc = topic_documents[idoc - documents.begin()];
+			vec& v_doc = v_semantics[idoc - documents.begin()];
 			vec v_doc_grad = zeros(dim);
 
-			for (auto iword = idoc->begin(); iword != idoc->end(); ++iword)
+			for (auto iword = idoc->begin(); iword < idoc->end(); ++iword)
 			{
 				vec& v_word = topic_words[*iword];
 				v_doc_grad += alpha * as_scalar(1 - v_doc.t()*v_word) * v_word;
 				v_word += alpha * as_scalar(1 - v_doc.t()*v_word) * v_doc;
 
 				vec& v_word_ns = topic_words[words[rand() % words.size()]];
-				v_doc_grad -= alpha * balance * as_scalar(1 - v_doc.t()*v_word_ns) * v_word_ns;
-				v_word_ns -= alpha * balance * as_scalar(1 - v_doc.t()*v_word_ns) * v_doc;
-
-				v_word_ns = max(v_word_ns, zeros(dim));
-				v_word = max(v_word, zeros(dim));
+				v_doc_grad += alpha * as_scalar(0 - v_doc.t()*v_word_ns) * v_word_ns;
+				v_word_ns += alpha * as_scalar(0 - v_doc.t()*v_word_ns) * v_doc;
 
 				v_word_ns = normalise(v_word_ns);
 				v_word = normalise(v_word);
 			}
 
 			v_doc += v_doc_grad;
-			v_doc = max(v_doc, zeros(dim));
 			v_doc = normalise(v_doc);
 		}
 	}
@@ -243,8 +227,8 @@ public:
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
-		vec& head_sem = topic_documents[triplet.first.first];
-		vec& tail_sem = topic_documents[triplet.first.second];
+		vec& head_sem = v_semantics[triplet.first.first];
+		vec& tail_sem = v_semantics[triplet.first.second];
 
 		pair<pair<int, int>, int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
@@ -255,8 +239,8 @@ public:
 		vec& head_f = embedding_entity[triplet_f.first.first];
 		vec& tail_f = embedding_entity[triplet_f.first.second];
 		vec& relation_f = embedding_relation[triplet_f.second];
-		vec& head_sem_f = topic_documents[triplet_f.first.first];
-		vec& tail_sem_f = topic_documents[triplet_f.first.second];
+		vec& head_sem_f = v_semantics[triplet_f.first.first];
+		vec& tail_sem_f = v_semantics[triplet_f.first.second];
 
 		vec semantic = semantic_composition(triplet);
 		vec error = head + relation - tail;
@@ -264,11 +248,11 @@ public:
 		double length = as_scalar(semantic.t()*semantic);
 		vec grad = error - projection * (2 - projection) * semantic;
 
-		head -= alpha * grad;
-		tail += alpha * grad;
-		relation -= alpha * grad;
-		head_sem -= alpha * projection * (1 - length) * error;
-		tail_sem -= alpha * projection * (1 - length) * error;
+		head -= alpha * balance * grad + alpha * sign(error);
+		tail += alpha * balance * grad + alpha * sign(error);
+		relation -= alpha * balance * grad + alpha * sign(error);
+		head_sem -= alpha * balance * factor * projection * (1 - length) * error;
+		tail_sem -= alpha * balance * factor * projection * (1 - length) * error;
 
 		vec semantic_f = semantic_composition(triplet_f);
 		vec error_f = head_f + relation_f - tail_f;
@@ -276,11 +260,11 @@ public:
 		double length_f = as_scalar(semantic_f.t()*semantic_f);
 		vec grad_f = error_f - projection_f * (2 - projection_f) * semantic_f;
 
-		head_f += alpha * grad_f;
-		tail_f -= alpha * grad_f;
-		relation_f += alpha * grad_f;
-		head_sem_f += alpha * projection_f * (1 - length_f) * error_f;
-		tail_sem_f += alpha * projection_f * (1 - length_f) * error_f;
+		head_f += alpha * balance * grad_f + alpha * sign(error_f);
+		tail_f -= alpha * balance * grad_f + alpha * sign(error_f);
+		relation_f += alpha * balance * grad_f + alpha * sign(error_f);
+		head_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
+		tail_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
 
 		if (norm(head) > 1.0)
 			head = normalise(head);
@@ -297,20 +281,15 @@ public:
 		if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
-		head_sem_f = normalise(head_sem_f);
-		tail_sem_f = normalise(tail_sem_f);
 		head_sem = normalise(head_sem);
 		tail_sem = normalise(tail_sem);
+		head_sem_f = normalise(head_sem_f);
+		tail_sem_f = normalise(tail_sem_f);
 	}
 
 	virtual void train(bool last_time = false) override
 	{
-		if (epos < 10)
-			train_topic();
-		else
-			TransE::train(last_time);
-
-		if (epos % 10 == 0)
-			train_topic();
+		TransE::train(last_time);
+		train_topic();
 	}
 };

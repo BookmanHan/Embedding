@@ -271,17 +271,16 @@ public:
 		triplet = origin;
 		while(true)
 		{
-			if(rand()%1000 < 1000 * prob)
+			if (rand()%100 < 50)
+				triplet.second = rand()%set_relation.size();
+			else if (rand() % 1000 < 1000 * prob)
 			{
-				triplet.first.second = rand()%set_entity.size();
+				triplet.first.second = rand() % set_entity.size();
 			}
 			else
 			{
-				triplet.first.first = rand()%set_entity.size();
+				triplet.first.first = rand() % set_entity.size();
 			}
-
-			if (rand()%100 > 90)
-				triplet.second = rand()%set_relation.size();
 
 			if (check_data_train.find(triplet) == check_data_train.end())
 				return;

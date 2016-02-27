@@ -34,6 +34,9 @@
     <ClInclude Include="SemanticModel.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="Task.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Embedding.cpp">

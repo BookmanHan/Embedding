@@ -64,12 +64,22 @@ public:
 
 		train(true);
 	}
+
 public:
 	double		best_triplet_result;
 	double		best_link_mean;
 	double		best_link_hitatten;
 	double		best_link_fmean;
 	double		best_link_fhitatten;
+
+	void reset()
+	{
+		best_triplet_result = 0;
+		best_link_mean = 1e10;
+		best_link_hitatten = 0;
+		best_link_fmean = 1e10;
+		best_link_fhitatten = 0;
+	}
 
 	void test(int hit_rank = 10)
 	{
