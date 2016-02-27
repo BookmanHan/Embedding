@@ -35,6 +35,8 @@ _ReSharper*/
 [Tt]est[Rr]esult*
 *.vssscc
 $tf*/
-
+*.opendb
+*.exp
+*.dll
 #ignore thumbnails created by windows
 #Ignore files build by Visual Studio
