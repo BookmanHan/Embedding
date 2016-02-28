@@ -33,10 +33,10 @@ public:
 		model->logging.record() << "\t[Task]\tEntity Classification";
 		model->logging.record() << "\t[Evaluated Type Number]\t" << evaluted_type;
 
-		int dim_init = model->entity_representation(1).n_cols;
+		int dim_init = model->entity_representation(1).n_rows;
 		for (auto i = lrc.begin(); i != lrc.end(); ++i)
 		{
-			*i = randu(dim_init);
+			*i = randn(dim_init);
 		}
 
 		topics.resize(model->count_entity());
@@ -120,6 +120,7 @@ public:
 		{
 			cout << epos << ',';
 			int pos = 0;
+
 			for (auto i = topics_training.begin(); i != topics_training.end(); ++i)
 			{
 				++pos;
@@ -128,10 +129,10 @@ public:
 
 				const vec& input = input_sample[i - topics_training.begin()];
 				auto i_lrc = lrc.begin();
-#pragma omp parallel for
-				for (auto it = i->begin(); it != i->end(); ++it)
+				for (auto it = i->begin(); it != i->end() && i_lrc != lrc.end(); ++it)
 				{
 					vec& lr_weight = *i_lrc;
+
 					double score = 1.0 / (1.0 + exp(-as_scalar(lr_weight.t()*input)));
 					lr_weight -= alpha * (score - *it) * input;
 					++i_lrc;
@@ -156,6 +157,7 @@ public:
 			for (auto it = i->begin(); it != i->end(); ++i_lrc, ++it)
 			{
 				vec& lr_weight = *i_lrc;
+
 				double score = 1.0 / (1.0 + exp(-as_scalar(lr_weight.t()*input)));
 				if ((score >= 0.5 && *it == 1) || (score <= 0.5 && *it == 0))
 				{
@@ -202,7 +204,6 @@ public:
 
 				const vec& input = input_sample[i - topics_training.begin()];
 				auto i_lrc = lrc.begin();
-#pragma omp parallel for
 				for (auto it = i->begin(); it != i->end(); ++it)
 				{
 					vec& lr_weight = *i_lrc;

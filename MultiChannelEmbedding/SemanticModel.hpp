@@ -50,6 +50,16 @@ public:
 			fin >> name;
 
 			int	pos = data_model.entity_name_to_id.find(name)->second;
+			if (pos < 0 || pos >= count_entity())
+			{
+				for (auto i = 0; i < dim; ++i)
+				{
+					double tmp;
+					fin >> tmp;
+				}
+				continue;
+			}
+
 			for (auto i = 0; i < dim; ++i)
 			{
 				fin >> v_semantics[pos][i];
