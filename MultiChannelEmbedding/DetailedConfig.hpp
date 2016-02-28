@@ -15,6 +15,10 @@ const string semantic_vfile_FB15K = "D:\\Data\\Knowledge Embedding\\FB15K\\topic
 const string semantic_tfile_FB15K = "D:\\Data\\Knowledge Embedding\\FB15K\\description.txt";
 const string semantic_vfile_WN18 = "D:\\Data\\Knowledge Embedding\\WN18\\topics.bsd";
 const string semantic_tfile_WN18 = "D:\\Data\\Knowledge Embedding\\WN18\\descriptions.txt";
+const string semantic_vfile_FB15KZS = "D:\\Data\\Knowledge Embedding\\FB15KZS\\topics.bsd";
+const string semantic_tfile_FB15KZS = "D:\\Data\\Knowledge Embedding\\FB15KZS\\description.txt";
+const string type_file_FB15K = "D:\\Data\\Knowledge Embedding\\FB15K\\type.txt";
+const string triple_zeroshot_FB15K = "D:\\Data\\Knowledge Embedding\\FB15KZS\\zeroshot.txt";
 #endif
 
 #ifdef SSD_LOAD
@@ -30,4 +34,8 @@ const string semantic_vfile_FB15K = "C:\\Data\\Knowledge Embedding\\FB15K\\topic
 const string semantic_tfile_FB15K = "C:\\Data\\Knowledge Embedding\\FB15K\\description.txt";
 const string semantic_vfile_WN18 = "C:\\Data\\Knowledge Embedding\\WN18\\topics.bsd";
 const string semantic_tfile_WN18 = "C:\\Data\\Knowledge Embedding\\WN18\\descriptions.txt";
+const string type_file_FB15K = "C:\\Data\\Knowledge Embedding\\FB15K\\type.txt";
+const string triple_zeroshot_FB15K = "C:\\Data\\Knowledge Embedding\\FB15KZS\\zeroshot.txt";
+const string semantic_vfile_FB15KZS = "C:\\Data\\Knowledge Embedding\\FB15KZS\\topics.bsd";
+const string semantic_tfile_FB15KZS = "C:\\Data\\Knowledge Embedding\\FB15KZS\\description.txt";
 #endif

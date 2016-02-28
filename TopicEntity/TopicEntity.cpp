@@ -20,7 +20,7 @@ void freebase_LSI()
 	const double alpha = 0.02;
 
 	vector<pair<string, vector<string>>>	documents;
-	fstream fin("D:\\Data\\Knowledge Embedding\\FB15K\\description.txt");
+	fstream fin("D:\\Data\\Knowledge Embedding\\FB15KZS\\description.txt");
 	char_separator<char> sep(" \t \"\',.\\?!#%@");
 
 	vector<vec>			topic_documents;
@@ -57,7 +57,7 @@ void freebase_LSI()
 	}
 	fin.close();
 
-	for (auto i = 0; i < 100; ++i)
+	for (auto i = 0; i < 20; ++i)
 	{
 		cout << "Epos : " << i << endl;
 
@@ -94,7 +94,7 @@ void freebase_LSI()
 		v_doc = normalise(v_doc);
 	}
 
-	fstream fout("D:\\Data\\Knowledge Embedding\\FB15K\\topics.bsd", ios::out);
+	fstream fout("D:\\Data\\Knowledge Embedding\\FB15KZS\\topics.bsd", ios::out);
 	for (auto i = documents.begin(); i != documents.end(); ++i)
 	{
 		fout << i->first << endl;
@@ -102,7 +102,7 @@ void freebase_LSI()
 	}
 }
 
-int main()
+void wordnet_LSI()
 {
 	const int dim = 100;
 	const double alpha = 0.02;
@@ -147,7 +147,7 @@ int main()
 	fin.close();
 
 	for (auto i = 0; i < 100; ++i)
-	{ 
+	{
 		cout << "Epos : " << i << endl;
 
 		for (auto idoc = documents.begin(); idoc != documents.end(); ++idoc)
@@ -189,6 +189,11 @@ int main()
 		fout << i->first << endl;
 		topic_documents[i - documents.begin()].save(fout, raw_ascii);
 	}
+}
+
+int main()
+{
+	freebase_LSI();
 
 	return 0;
 }

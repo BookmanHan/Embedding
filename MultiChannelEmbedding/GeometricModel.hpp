@@ -38,6 +38,28 @@ public:
 		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = (2*randu(dim,1)-1)*sqrt(6.0/dim);});
 	}
 
+	TransE(const Dataset& dataset,
+		const string& file_zero_shot,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold)
+		:Model(dataset, file_zero_shot, task_type, logging_base_path),
+		dim(dim), alpha(alpha), training_threshold(training_threshold)
+	{
+		logging.record() << "\t[Name]\tTransE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Learning Rate]\t" << alpha;
+		logging.record() << "\t[Training Threshold]\t" << training_threshold;
+
+		embedding_entity.resize(count_entity());
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem) {elem = (2 * randu(dim, 1) - 1)*sqrt(6.0 / dim);});
+
+		embedding_relation.resize(count_relation());
+		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem) {elem = (2 * randu(dim, 1) - 1)*sqrt(6.0 / dim);});
+	}
+
 	virtual void draw(const string& filename, const int radius, const int id_relation) const
 	{
 		mat	record(radius*6.0 + 10, radius*6.0 + 10);
@@ -230,6 +252,17 @@ public:
 
 		embedding_entity[i] -= alpha * factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[j];
 		embedding_entity[j] -= alpha * factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[i];
+	}
+
+public:
+	virtual vec entity_representation(int entity_id) const
+	{
+		return embedding_entity[entity_id];
+	}
+
+	virtual vec relation_representation(int relation_id) const
+	{
+		return embedding_relation[relation_id];
 	}
 };
 

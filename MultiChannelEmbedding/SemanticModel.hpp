@@ -60,6 +60,49 @@ public:
 		cout << "File Loaded." << endl;
 	}
 
+	SemanticModel(
+		const Dataset& dataset,
+		const string& file_zeroshot,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		const string& semantic_file,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance = 0.1)
+		:TransE(dataset, file_zeroshot, task_type,logging_base_path, dim, alpha, training_threshold),
+		balance(balance)
+	{
+		logging.record() << "\t[Name]\tSemanticModel.TransE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Learning Rate]\t" << alpha;
+		logging.record() << "\t[Training Threshold]\t" << training_threshold;
+		logging.record() << "\t[Topic Model]\tLSI";
+		logging.record() << "\t[Balance]\t" << balance;
+
+		v_semantics.resize(count_entity() + 10);
+		for (auto i = v_semantics.begin(); i != v_semantics.end(); ++i)
+		{
+			*i = randu(dim);
+		}
+
+		fstream fin(semantic_file);
+		while (!fin.eof())
+		{
+			string	name;
+			fin >> name;
+
+			int	pos = data_model.entity_name_to_id.find(name)->second;
+			for (auto i = 0; i < dim; ++i)
+			{
+				fin >> v_semantics[pos][i];
+			}
+		}
+		fin.close();
+
+		cout << "File Loaded." << endl;
+	}
+
 public:
 	virtual const vec semantic_composition(const pair<pair<int, int>, int>& triplet) const
 	{
@@ -127,6 +170,12 @@ public:
 		if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
+
+public:
+	virtual vec entity_representation(int entity_id) const override
+	{
+		return join_cols(embedding_entity[entity_id], v_semantics[entity_id]);
+	}
 };
 
 class SemanticModel_Joint
@@ -153,6 +202,60 @@ public:
 		double balance,
 		double factor)
 		:SemanticModel(dataset, task_type, logging_base_path, semantic_file, dim, alpha, training_threshold, balance),
+		factor(factor)
+	{
+		logging.record() << "\t[Name]\tSemanticModel.Joint";
+		logging.record() << "\t[Factor]\t" << factor;
+
+		documents.resize(count_entity() + 10);
+
+		fstream fin(semantic_file_raw);
+		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
+		while (!fin.eof())
+		{
+			string strin;
+			getline(fin, strin);
+			boost::tokenizer<boost::char_separator<char>>	token(strin, sep);
+
+			string entity_name;
+			vector<string>	entity_description;
+			for (auto i = token.begin(); i != token.end(); ++i)
+			{
+				if (i == token.begin())
+				{
+					entity_name = *i;
+				}
+				else
+				{
+					entity_description.push_back(*i);
+					if (topic_words.find(*i) == topic_words.end())
+					{
+						topic_words[*i] = randu(dim);
+						words.push_back(*i);
+					}
+				}
+			}
+
+			documents[data_model.entity_name_to_id.find(entity_name)->second] = entity_description;
+		}
+		fin.close();
+
+		cout << "File Loaded." << endl;
+	}
+
+	SemanticModel_Joint(
+		const Dataset& dataset,
+		const string& file_zeroshot,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		const string& semantic_file,
+		const string& semantic_file_raw,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance,
+		double factor)
+		:SemanticModel(dataset, file_zeroshot, task_type, logging_base_path, semantic_file, dim, alpha, training_threshold, balance),
 		factor(factor)
 	{
 		logging.record() << "\t[Name]\tSemanticModel.Joint";
@@ -231,7 +334,7 @@ public:
 		vec& tail_sem = v_semantics[triplet.first.second];
 
 		pair<pair<int, int>, int> triplet_f;
-		data_model.sample_false_triplet(triplet, triplet_f);
+		data_model.sample_false_triplet_relation(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
 			return;
@@ -291,5 +394,38 @@ public:
 	{
 		TransE::train(last_time);
 		train_topic();
+	}
+};
+
+class SemanticModel_ZeroShot
+	:public SemanticModel_Joint
+{
+public:
+	SemanticModel_ZeroShot(
+		const Dataset& dataset,
+		const string& file_zeroshot,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		const string& semantic_file,
+		const string& semantic_file_raw,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance,
+		double factor)
+		:SemanticModel_Joint(dataset, file_zeroshot, task_type, logging_base_path, semantic_file,
+			semantic_file_raw, dim, alpha, training_threshold, balance, factor)
+	{
+		logging.record() << "\t[Name]\tZeroShot";
+	}
+
+public:
+	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet) override
+	{
+		const vec& semantic = semantic_composition(triplet);
+		double length = as_scalar(semantic.t()*semantic);
+		double p = 2 - (-balance - 1) / length;
+
+		return - p * p * ((p - 1)*(p - 1) + (p - 2)*(p - 2)) * length;
 	}
 };

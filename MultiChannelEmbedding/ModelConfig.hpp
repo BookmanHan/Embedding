@@ -31,9 +31,13 @@ public:
 
 enum TaskType
 {
+	General,
 	LinkPredictionHead,
 	LinkPredictionTail, 
 	LinkPredictionRelation,
+	LinkPredictionHeadZeroShot,
+	LinkPredictionTailZeroShot,
+	LinkPredictionRelationZeroShot,
 	TripletClassification,
 	DrawEmbedding,
 	TransA_ReportWeightes,
