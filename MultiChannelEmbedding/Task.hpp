@@ -241,22 +241,11 @@ public:
 			hits += hit;
 		}
 
-		hits /= topic_list_id_to_raw.size() * topics.size() / 10.0;
+		hits /= topic_list_id_to_raw.size() * 
+			(model->count_entity() - model->get_data_model().zeroshot_pointer);
 
 		cout << endl << "Entity Classification = " << hits << endl;
 		model->logging.record() << "Entity Classification MAP = " << hits;
-	}
-};
-
-class ZeroShot
-{
-protected:
-	Model* model;
-
-public:
-	ZeroShot(Model* model, const string dataset)
-	{
-		;
 	}
 };
 

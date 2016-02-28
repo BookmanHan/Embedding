@@ -298,6 +298,8 @@ public:
 
 	void test_link_prediction_zeroshot(int hit_rank = 10, const int part = 0)
 	{
+		reset();
+
 		double mean = 0;
 		double hits = 0;
 		double fmean = 0;

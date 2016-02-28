@@ -193,7 +193,16 @@ void wordnet_LSI()
 
 int main()
 {
-	freebase_LSI();
+	fstream fin("C:\\Data\\Knowledge Embedding\\FB15KZS\\entity2id.txt");
+	fstream fout("C:\\Data\\Knowledge Embedding\\FB15KZS\\entity.txt", ios::out);
+	while (!fin.eof())
+	{
+		string name, time;
+		fin >> name >> time;
+		fout << name << endl;
+	}
+	fin.close();
+	fout.close();
 
 	return 0;
 }
