@@ -6,6 +6,9 @@
 #include <armadillo>
 #include <iostream>
 #include <fstream>
+#include <iterator>
+#include <algorithm>
+#include <sstream>
 #include <boost/format.hpp>  
 #include <boost/tokenizer.hpp>  
 #include <boost/algorithm/string.hpp>  
@@ -13,6 +16,153 @@
 using namespace std;
 using namespace arma;
 using namespace boost;
+
+template<typename T>
+class vmat_storage
+{
+public:
+	static void save(const vector<Mat<T>>& vmatout, ofstream& fout)
+	{
+		auto n_size = vmatout.size();
+		fout.write((char*)&n_size, sizeof(vmatout.size()));
+
+		for (const Mat<T> & ivmatout : vmatout)
+		{
+			fout.write((char*)&ivmatout.n_rows, sizeof(ivmatout.n_rows));
+			fout.write((char*)&ivmatout.n_cols, sizeof(ivmatout.n_cols));
+
+			fout.write((char*)ivmatout.memptr(), ivmatout.n_elem * sizeof(T));
+		}
+	}
+
+	static void load(vector<Mat<T>>& vmatin, ifstream& fin)
+	{
+		vector<Mat<T>>::size_type n_size;
+		fin.read((char*)&n_size, sizeof(n_size));
+		vmatin.resize(n_size);
+
+		for (Mat<T> & ivmatin : vmatin)
+		{
+			arma::uword	n_row, n_col;
+
+			fin.read((char*)&n_row, sizeof(n_row));
+			fin.read((char*)&n_col, sizeof(n_col));
+
+			ivmatin.resize(n_row, n_col);
+			fin.read((char*)ivmatin.memptr(), n_row * n_col * sizeof(T));
+		}
+	}
+
+public:
+	static void save(const vector<Col<T>>& vmatout, ofstream& fout)
+	{
+		auto n_size = vmatout.size();
+		fout.write((char*)&n_size, sizeof(vmatout.size()));
+
+		for (const Col<T> & ivmatout : vmatout)
+		{
+			fout.write((char*)&ivmatout.n_rows, sizeof(ivmatout.n_rows));
+			fout.write((char*)&ivmatout.n_cols, sizeof(ivmatout.n_cols));
+
+			fout.write((char*)ivmatout.memptr(), ivmatout.n_elem * sizeof(T));
+		}
+	}
+
+	static void load(vector<Col<T>>& vmatin, ifstream& fin)
+	{
+		vector<Col<T>>::size_type n_size;
+		fin.read((char*)&n_size, sizeof(n_size));
+		vmatin.resize(n_size);
+
+		for (Col<T> & ivmatin : vmatin)
+		{
+			arma::uword	n_row, n_col;
+
+			fin.read((char*)&n_row, sizeof(n_row));
+			fin.read((char*)&n_col, sizeof(n_col));
+
+			ivmatin.resize(n_row);
+			fin.read((char*)ivmatin.memptr(), n_row * n_col * sizeof(T));
+		}
+	}
+};
+
+class web_page_stream
+	:public ostream
+{
+protected:
+	const string file_name;
+	stringstream fout;
+
+public:
+	web_page_stream(const string& file_name)
+		:file_name(file_name)
+	{
+		;
+	}
+
+public:
+	template<typename T>
+	web_page_stream& operator << (T thing)
+	{
+		fout << thing;
+		return *this;
+	}
+
+	template<typename T>
+	web_page_stream& operator << (decltype(endl<T>) thing)
+	{
+		newline();
+		return *this;
+	}
+
+public:
+	void newline()
+	{
+		fout << "<br/>";
+	}
+
+	void out()
+	{
+		ofstream ofout(file_name, ios::out);
+		ofout << "<html>" << endl;
+		ofout << "<head><meta http-equiv=\"refresh\" content=\"1\"></head>" << endl;
+		ofout << "<body>" << endl;
+		ofout << fout.str() << endl;
+		ofout << "</body>" << endl;
+		ofout << "</html>";
+		ofout.close();
+	}
+
+	void show()
+	{
+		out();
+		system(file_name.c_str());
+	}
+
+	void cls()
+	{
+		fout.str("");
+	}
+
+	void stress()
+	{
+
+	}
+
+	~web_page_stream()
+	{
+		ofstream ofout(file_name, ios::out);
+		ofout << "<html>" << endl;
+		ofout << "<body>" << endl;
+		ofout << fout.str() << endl;
+		ofout << "</body>" << endl;
+		ofout << "</html>";
+		ofout.close();
+	}
+};
+
+web_page_stream wout("D:\\Temp\\1.html");
 
 void freebase_LSI()
 {
@@ -59,8 +209,11 @@ void freebase_LSI()
 
 	for (auto i = 0; i < 20; ++i)
 	{
-		cout << "Epos : " << i << endl;
+		wout.cls();
+		wout << "Epos : " << i;
+		wout.newline();
 
+#pragma omp parallel for
 		for (auto idoc = documents.begin(); idoc != documents.end(); ++idoc)
 		{
 			vec& v_doc = topic_documents[idoc - documents.begin()];
@@ -84,8 +237,10 @@ void freebase_LSI()
 			v_doc = normalise(v_doc);
 		}
 
-		cout << topic_documents[2].t();
-		cout << topic_documents[10].t();
+		wout << topic_documents[2].t();
+		wout << topic_documents[10].t();
+
+		wout.out();
 	}
 
 	for (auto idoc = documents.begin(); idoc != documents.end(); ++idoc)
@@ -94,12 +249,9 @@ void freebase_LSI()
 		v_doc = normalise(v_doc);
 	}
 
-	fstream fout("D:\\Data\\Knowledge Embedding\\FB15KZS\\topics.bsd", ios::out);
-	for (auto i = documents.begin(); i != documents.end(); ++i)
-	{
-		fout << i->first << endl;
-		topic_documents[i - documents.begin()].save(fout, raw_ascii);
-	}
+	ofstream fout("D:\\Data\\Knowledge Embedding\\FB15KZS\\topics.bsd", ios::binary);
+	vmat_storage<double>::save(topic_documents, fout);
+	fout.close();
 }
 
 void wordnet_LSI()
@@ -189,20 +341,12 @@ void wordnet_LSI()
 		fout << i->first << endl;
 		topic_documents[i - documents.begin()].save(fout, raw_ascii);
 	}
-}
+} 
 
 int main()
 {
-	fstream fin("C:\\Data\\Knowledge Embedding\\FB15KZS\\entity2id.txt");
-	fstream fout("C:\\Data\\Knowledge Embedding\\FB15KZS\\entity.txt", ios::out);
-	while (!fin.eof())
-	{
-		string name, time;
-		fin >> name >> time;
-		fout << name << endl;
-	}
-	fin.close();
-	fout.close();
+	wout.show();
+	freebase_LSI();
 
 	return 0;
 }

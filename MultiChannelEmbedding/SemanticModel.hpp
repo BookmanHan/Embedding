@@ -37,37 +37,36 @@ public:
 		logging.record() << "\t[Topic Model]\tLSI";
 		logging.record() << "\t[Balance]\t" << balance;
 
-		v_semantics.resize(count_entity()+10);
-		for (auto i = v_semantics.begin(); i != v_semantics.end(); ++i)
-		{
-			*i = randu(dim);
-		}
-
-		fstream fin(semantic_file);
-		while (!fin.eof())
-		{
-			string	name;
-			fin >> name;
-
-			int	pos = data_model.entity_name_to_id.find(name)->second;
-			if (pos < 0 || pos >= count_entity())
-			{
-				for (auto i = 0; i < dim; ++i)
-				{
-					double tmp;
-					fin >> tmp;
-				}
-				continue;
-			}
-
-			for (auto i = 0; i < dim; ++i)
-			{
-				fin >> v_semantics[pos][i];
-			}
-		}
+		ifstream fin(semantic_file, ios::binary);
+		storage_vmat<double>::load(v_semantics, fin);
 		fin.close();
 
 		cout << "File Loaded." << endl;
+	}
+
+	SemanticModel(
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance = 0.1)
+		:TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold),
+		balance(balance)
+	{
+		logging.record() << "\t[Name]\tSemanticModel.TransE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Learning Rate]\t" << alpha;
+		logging.record() << "\t[Training Threshold]\t" << training_threshold;
+		logging.record() << "\t[Topic Model]\tLSI";
+		logging.record() << "\t[Balance]\t" << balance;
+
+		v_semantics.resize(count_entity()+10);
+		for (auto& elem : v_semantics)
+		{
+			elem = randn(dim);
+		}
 	}
 
 	SemanticModel(
@@ -90,25 +89,37 @@ public:
 		logging.record() << "\t[Topic Model]\tLSI";
 		logging.record() << "\t[Balance]\t" << balance;
 
-		v_semantics.resize(count_entity() + 10);
-		for (auto i = v_semantics.begin(); i != v_semantics.end(); ++i)
-		{
-			*i = randu(dim);
-		}
-
-		fstream fin(semantic_file);
-		while (!fin.eof())
-		{
-			string	name;
-			fin >> name;
-
-			int	pos = data_model.entity_name_to_id.find(name)->second;
-			for (auto i = 0; i < dim; ++i)
-			{
-				fin >> v_semantics[pos][i];
-			}
-		}
+		ifstream fin(semantic_file, ios::binary);
+		storage_vmat<double>::load(v_semantics, fin);
 		fin.close();
+
+		cout << "File Loaded." << endl;
+	}
+
+	SemanticModel(
+		const Dataset& dataset,
+		const string& file_zeroshot,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance = 0.1)
+		:TransE(dataset, file_zeroshot, task_type, logging_base_path, dim, alpha, training_threshold),
+		balance(balance)
+	{
+		logging.record() << "\t[Name]\tSemanticModel.TransE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Learning Rate]\t" << alpha;
+		logging.record() << "\t[Training Threshold]\t" << training_threshold;
+		logging.record() << "\t[Topic Model]\tLSI";
+		logging.record() << "\t[Balance]\t" << balance;
+
+		v_semantics.resize(count_entity()+10);
+		for (auto& elem : v_semantics)
+		{
+			elem = randn(dim);
+		}
 
 		cout << "File Loaded." << endl;
 	}
@@ -184,7 +195,10 @@ public:
 public:
 	virtual vec entity_representation(int entity_id) const override
 	{
-		return join_cols(embedding_entity[entity_id], v_semantics[entity_id]);
+		if (data_model.zeroshot_pointer + 1 < data_model.set_entity.size())
+			return v_semantics[entity_id];
+		else
+			return join_cols(zeros(dim), v_semantics[entity_id]);
 	}
 };
 
@@ -200,6 +214,58 @@ protected:
 	const double factor;
 
 public:
+	SemanticModel_Joint(
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		const string& semantic_file_raw,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance,
+		double factor)
+		:SemanticModel(dataset, task_type, logging_base_path, dim, alpha, training_threshold, balance),
+		factor(factor)
+	{
+		logging.record() << "\t[Name]\tSemanticModel.Joint";
+		logging.record() << "\t[Factor]\t" << factor;
+
+		documents.resize(count_entity() + 10);
+
+		fstream fin(semantic_file_raw);
+		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
+		while (!fin.eof())
+		{
+			string strin;
+			getline(fin, strin);
+			boost::tokenizer<boost::char_separator<char>>	token(strin, sep);
+
+			string entity_name;
+			vector<string>	entity_description;
+			for (auto i = token.begin(); i != token.end(); ++i)
+			{
+				if (i == token.begin())
+				{
+					entity_name = *i;
+				}
+				else
+				{
+					entity_description.push_back(*i);
+					if (topic_words.find(*i) == topic_words.end())
+					{
+						topic_words[*i] = randu(dim);
+						words.push_back(*i);
+					}
+				}
+			}
+
+			documents[data_model.entity_name_to_id.find(entity_name)->second] = entity_description;
+		}
+		fin.close();
+
+		cout << "File Loaded." << endl;
+	}
+
 	SemanticModel_Joint(
 		const Dataset& dataset,
 		const TaskType& task_type,
@@ -266,6 +332,59 @@ public:
 		double balance,
 		double factor)
 		:SemanticModel(dataset, file_zeroshot, task_type, logging_base_path, semantic_file, dim, alpha, training_threshold, balance),
+		factor(factor)
+	{
+		logging.record() << "\t[Name]\tSemanticModel.Joint";
+		logging.record() << "\t[Factor]\t" << factor;
+
+		documents.resize(count_entity() + 10);
+
+		fstream fin(semantic_file_raw);
+		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
+		while (!fin.eof())
+		{
+			string strin;
+			getline(fin, strin);
+			boost::tokenizer<boost::char_separator<char>>	token(strin, sep);
+
+			string entity_name;
+			vector<string>	entity_description;
+			for (auto i = token.begin(); i != token.end(); ++i)
+			{
+				if (i == token.begin())
+				{
+					entity_name = *i;
+				}
+				else
+				{
+					entity_description.push_back(*i);
+					if (topic_words.find(*i) == topic_words.end())
+					{
+						topic_words[*i] = randu(dim);
+						words.push_back(*i);
+					}
+				}
+			}
+
+			documents[data_model.entity_name_to_id.find(entity_name)->second] = entity_description;
+		}
+		fin.close();
+
+		cout << "File Loaded." << endl;
+	}
+
+	SemanticModel_Joint(
+		const Dataset& dataset,
+		const string& file_zeroshot,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		const string& semantic_file_raw,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double balance,
+		double factor)
+		:SemanticModel(dataset, file_zeroshot, task_type, logging_base_path, dim, alpha, training_threshold, balance),
 		factor(factor)
 	{
 		logging.record() << "\t[Name]\tSemanticModel.Joint";

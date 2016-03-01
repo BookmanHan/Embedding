@@ -983,6 +983,7 @@
     <ClInclude Include="ModelConfig.hpp" />
     <ClInclude Include="OrbitModel.hpp" />
     <ClInclude Include="SemanticModel.hpp" />
+    <ClInclude Include="Storage.hpp" />
     <ClInclude Include="Task.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

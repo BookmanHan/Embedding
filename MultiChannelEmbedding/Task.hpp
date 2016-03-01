@@ -16,6 +16,7 @@ protected:
 	vector<int>					topic_list_id_to_raw;
 	vector<int>					topic_list_raw_to_id;
 	map<string, int>			topic_name_to_id;
+	set<int>					filtered_topic;
 	vector<int>					topic_count;
 	TransE *					model;
 	vector<vec>					input_sample;
@@ -76,7 +77,6 @@ public:
 		sort(sorted_count.begin(), sorted_count.end(), greater<int>());
 		int threshold = sorted_count[evaluted_type] - 1;
 
-		set<int> filtered_topic;
 		topic_list_raw_to_id.resize(topic_count.size());
 		for (auto i = 0; i < topic_count.size(); ++i)
 		{
@@ -110,34 +110,39 @@ public:
 			const vec input_entity = model->entity_representation(i);
 			input_sample[i] = input_entity;
 		}
+
+		best = 0;
 	}
 
 public:
+	double best;
 	void train(int epos, double alpha)
 	{
+		model->logging.record() << "\t[Alpha]\t" << alpha;
 		cout << endl;
 		while (epos-- > 0)
 		{
 			cout << epos << ',';
-			int pos = 0;
 
-			for (auto i = topics_training.begin(); i != topics_training.end(); ++i)
+			int pos = 0;
+			for (auto i = topics.begin(); i != topics.end(); ++i)
 			{
 				++pos;
 				if (pos % 10 == 0)
 					continue;
 
-				const vec& input = input_sample[i - topics_training.begin()];
-				auto i_lrc = lrc.begin();
-				for (auto it = i->begin(); it != i->end() && i_lrc != lrc.end(); ++it)
+				const vec& input = input_sample[i - topics.begin()];
+				int now_pos = 0;
+				for (auto it = topics_training[i - topics.begin()].begin(); it != topics_training[i - topics.begin()].end(); ++it)
 				{
-					vec& lr_weight = *i_lrc;
-
+					vec& lr_weight = lrc[now_pos++];
 					double score = 1.0 / (1.0 + exp(-as_scalar(lr_weight.t()*input)));
+
 					lr_weight -= alpha * (score - *it) * input;
-					++i_lrc;
 				}
 			}
+
+			test();
 		}
 	}
 
@@ -145,33 +150,50 @@ public:
 	{
 		double hits = 0;
 		int pos = 0;
-		for (auto i = topics_training.begin(); i != topics_training.end(); ++i)
+		double ttdoc = 0;
+		for (auto i = topics.begin(); i != topics.end(); ++i)
 		{
 			++pos;
 			if (pos % 10 != 0)
 				continue;
 
-			const vec& input = input_sample[i - topics_training.begin()];
-			auto i_lrc = lrc.begin();
+			const vec& input = input_sample[i - topics.begin()];
 			double hit = 0;
-			for (auto it = i->begin(); it != i->end(); ++i_lrc, ++it)
+			vector<pair<double, int>>	scores;
+			for (auto it = lrc.begin(); it != lrc.end(); ++it)
 			{
-				vec& lr_weight = *i_lrc;
-
-				double score = 1.0 / (1.0 + exp(-as_scalar(lr_weight.t()*input)));
-				if ((score >= 0.5 && *it == 1) || (score <= 0.5 && *it == 0))
-				{
-					++hit;
-				}
+				double score = 1.0 / (1.0 + exp(-as_scalar((*it).t()*input)));
+				scores.push_back(make_pair(score, topic_list_id_to_raw[it-lrc.begin()]));
 			}
 
-			hits += hit;
+			sort(scores.begin(), scores.end(), greater<pair<double, int>>());
+			double cnt_ft = 0;
+			
+			for (auto iscore = scores.begin(); iscore != scores.end(); ++iscore)
+			{
+				if (i->find(iscore->second) == i->end())
+					continue;
+
+				++cnt_ft;
+				hit += cnt_ft / double(iscore - scores.begin() + 1);
+						
+				if (cnt_ft == i->size())
+					break;
+			}
+
+			if (cnt_ft != 0)
+			{
+				hits += hit / cnt_ft;
+				++ttdoc;
+			}
 		}
 
-		hits /= topic_list_id_to_raw.size() * topics.size() / 10.0;
-		 
-		cout <<endl << "Entity Classification = " << hits <<endl;
+		hits /= ttdoc;
+		best = max(hits, best);
+		cout <<endl << "Entity Classification = " << hits 
+			<< ", Best = " << best <<endl;
 		model->logging.record() << "Entity Classification MAP = " << hits;
+		model->logging.record() << "Best = " << best;
 	}
 };
 
@@ -192,60 +214,76 @@ public:
 	void train(int epos, double alpha)
 	{
 		cout << endl;
-		while (epos-- > 0)
+		while (epos --> 0)
 		{
-			cout << epos << ',';
+			cout << epos << ",";
 			int pos = 0;
-			for (auto i = topics_training.begin(); i != topics_training.end(); ++i)
+			for (auto i = topics.begin(); i != topics.end(); ++i)
 			{
 				++pos;
 				if (pos >= model->get_data_model().zeroshot_pointer)
 					break;
 
-				const vec& input = input_sample[i - topics_training.begin()];
-				auto i_lrc = lrc.begin();
-				for (auto it = i->begin(); it != i->end(); ++it)
+				const vec& input = input_sample[i - topics.begin()];
+				int now_pos = 0;
+				for (auto it = topics_training[i - topics.begin()].begin(); it != topics_training[i - topics.begin()].end(); ++it)
 				{
-					vec& lr_weight = *i_lrc;
+					vec& lr_weight = lrc[now_pos++];
 					double score = 1.0 / (1.0 + exp(-as_scalar(lr_weight.t()*input)));
+
 					lr_weight -= alpha * (score - *it) * input;
-					++i_lrc;
 				}
 			}
+
+			test();
 		}
 	}
 
 	void test()
 	{
 		double hits = 0;
-		int pos = 0;
-		for (auto i = topics_training.begin(); i != topics_training.end(); ++i)
+		double ttdoc = 0;
+		for (auto i = topics.begin() + model->get_data_model().zeroshot_pointer; 
+			i != topics.end(); ++i)
 		{
-			++pos;
-			if (pos < model->get_data_model().zeroshot_pointer)
-				continue;
-
-			const vec& input = input_sample[i - topics_training.begin()];
-			auto i_lrc = lrc.begin();
+			const vec& input = input_sample[i - topics.begin()];
 			double hit = 0;
-			for (auto it = i->begin(); it != i->end(); ++i_lrc, ++it)
+			vector<pair<double, int>>	scores;
+			for (auto it = lrc.begin(); it != lrc.end(); ++it)
 			{
-				vec& lr_weight = *i_lrc;
-				double score = 1.0 / (1.0 + exp(-as_scalar(lr_weight.t()*input)));
-				if ((score >= 0.5 && *it == 1) || (score <= 0.5 && *it == 0))
-				{
-					++hit;
-				}
+				double score = 1.0 / (1.0 + exp(-as_scalar((*it).t()*input)));
+				scores.push_back(make_pair(score, topic_list_id_to_raw[it - lrc.begin()]));
 			}
 
-			hits += hit;
+			sort(scores.begin(), scores.end(), greater<pair<double, int>>());
+			double cnt_ft = 0;
+
+			for (auto iscore = scores.begin(); iscore != scores.end(); ++iscore)
+			{
+				if (i->find(iscore->second) == i->end())
+					continue;
+
+				++cnt_ft;
+				hit += cnt_ft / double(iscore - scores.begin() + 1);
+
+				if (cnt_ft == i->size())
+					break;
+			}
+
+			if (cnt_ft != 0)
+			{
+				hits += hit / cnt_ft;
+				++ttdoc;
+			}
 		}
 
-		hits /= topic_list_id_to_raw.size() * 
-			(model->count_entity() - model->get_data_model().zeroshot_pointer);
+		hits /= ttdoc;
+		best = max(hits, best);
 
-		cout << endl << "Entity Classification = " << hits << endl;
+		cout << endl << "Entity Classification = " << hits
+			<< ", Best = " << best << endl;
 		model->logging.record() << "Entity Classification MAP = " << hits;
+		model->logging.record() << "Best = " << best;
 	}
 };
 
