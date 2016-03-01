@@ -543,168 +543,168 @@ public:
 	}
 };
 
-class MultiLayerPerceptron
-{
-protected:
-	vector<tuple<mat, function<double(const double&)>, function<double(const double&)>>>	weights;
-	const vector<int>																		network_architecture;
-
-public:
-	MultiLayerPerceptron(const vector<int>& network_architecture,
-		function<double(const double&)> fn_active = [](const double x){return (exp(x)-exp(-x))/(exp(x)+exp(-x));}, 
-		function<double(const double&)> fn_derv = [](const double x){return 1-x*x;})
-		:network_architecture(network_architecture)
-	{
-		for(auto layer=0; layer<network_architecture.size()-1; ++layer)
-		{
-			weights.push_back(make_tuple(
-				randn(network_architecture[layer], network_architecture[layer+1]), 
-				fn_active, fn_derv));
-		}
-	}
-
-	void add_layer(	const double ndin, 
-		const double ndout, 
-		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
-		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
-	{
-		weights.push_back(make_tuple(randn(ndin, ndout), fn_active, fn_derv));
-	}
-
-public:
-	virtual double infer(const vec& din) const
-	{
-		vec dout = din;
-		for(auto layer : weights)
-		{
-			dout = get<0>(layer).t() * dout;
-			for_each(dout.begin(), dout.end(), [&](double& elem){elem = get<1>(layer)(elem);});
-		}
-
-		return dout[0];
-	}
-
-public:
-	virtual void train_once(vec& head, vec& tail, const vec& dout, double alpha)
-	{
-		vector<vec>	hiddens;
-		hiddens.push_back(join_cols(head, tail));
-		for(auto layer : weights)
-		{
-			vec hidden_out = get<0>(layer).t() * hiddens.back();
-			for_each(hidden_out.begin(), hidden_out.end(), [&](double& elem){elem = get<1>(layer)(elem);});
-			hiddens.push_back(hidden_out);
-		}
-
-		vec derv = sign(hiddens.back() - dout);
-		for(auto layer=weights.size(); layer > 0; --layer)
-		{
-			for(auto dim_derv=0; dim_derv<derv.n_elem; ++dim_derv)
-			{
-				derv[dim_derv] *= get<2>(weights[layer-1])(hiddens[layer][dim_derv]);
-			}
-
-			get<0>(weights[layer-1]) -= alpha * hiddens[layer-1] * derv.t();
-			derv = get<0>(weights[layer-1]) * derv;
-		}
-		
-		head -= alpha * derv.rows(0, head.size()-1);
-		tail -= alpha * derv.rows(head.size(), head.size() + tail.size()-1);
-	}
-};
-
-class OrbitE_Deep
-	:public OrbitModel
-{
-protected:
-	vector<MultiLayerPerceptron> mlp;
-
-public:
-	OrbitE_Deep(	
-		const Dataset& dataset,
-		const TaskType& task_type,
-		const string& logging_base_path,
-		int dim,
-		double alpha,
-		double training_threshold,
-		vector<int>& na,
-		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
-		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
-		:OrbitModel(dataset, task_type, logging_base_path, 
-		dim, alpha, training_threshold)
-	{
-		logging.record()<<"\t[Name]\tOrbitE Deep";
-		logging.record()<<"\t[Network Structure]\t";
-		for(auto i=0; i<na.size(); ++i)
-		{
-			logging<<na[i]<<'\t';
-		}
-
-		for(auto i=0; i<count_relation(); ++i)
-		{
-			mlp.push_back(MultiLayerPerceptron(na, fn_active, fn_derv));
-		}
-
-		embedding_orbit = zeros(count_relation());
-	}
-
-	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
-	{
-		vec& head = embedding_entity[triplet.first.first];
-		vec& tail = embedding_entity[triplet.first.second];
-		vec& relation = embedding_relation[triplet.second];
-		double& orbit = embedding_orbit[triplet.second];
-
-		double score = fabs(mlp[triplet.second].infer(join_cols(head, tail)) - orbit*orbit);
-		return - score;
-	}
-
-	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
-	{
-		vec& head = embedding_entity[triplet.first.first];
-		vec& tail = embedding_entity[triplet.first.second];
-		vec& relation = embedding_relation[triplet.second];
-		double& orbit = embedding_orbit[triplet.second];
-
-		pair<pair<int, int>,int> triplet_f;
-		data_model.sample_false_triplet(triplet, triplet_f);
-
-		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
-			return;
-
-		vec& head_f = embedding_entity[triplet_f.first.first];
-		vec& tail_f = embedding_entity[triplet_f.first.second];
-		vec& relation_f = embedding_relation[triplet_f.second];
-
-		double factor = 
-			- sign(mlp[triplet.second].infer(join_cols(head, tail)) - orbit*orbit);
-		double factor_f = 
-			- sign(mlp[triplet_f.second].infer(join_cols(head_f, tail_f)) - orbit*orbit);
-
-		vec dout(1);
-		dout << orbit*orbit;
-		
-		mlp[triplet.second].train_once(head, tail, dout, alpha);
-		mlp[triplet.second].train_once(head_f, tail_f, dout, -alpha);
-
-		//orbit -= alpha * alpha *(factor - factor_f)*orbit;
-
-		if (norm(head) > 1.0)
-			head = normalise(head);
-
-		if (norm(tail) > 1.0)
-			tail = normalise(tail);
-
-		if (norm(relation) > 1.0)
-			relation = normalise(relation);
-
-		if (norm(head_f) > 1.0)
-			head_f = normalise(head_f);
-
-		if (norm(tail_f) > 1.0)
-			tail_f = normalise(tail_f);
-	}
-};
+//class MultiLayerPerceptron
+//{
+//protected:
+//	vector<tuple<mat, function<double(const double&)>, function<double(const double&)>>>	weights;
+//	const vector<int>																		network_architecture;
+//
+//public:
+//	MultiLayerPerceptron(const vector<int>& network_architecture,
+//		function<double(const double&)> fn_active = [](const double x){return (exp(x)-exp(-x))/(exp(x)+exp(-x));}, 
+//		function<double(const double&)> fn_derv = [](const double x){return 1-x*x;})
+//		:network_architecture(network_architecture)
+//	{
+//		for(auto layer=0; layer<network_architecture.size()-1; ++layer)
+//		{
+//			weights.push_back(make_tuple(
+//				randn(network_architecture[layer], network_architecture[layer+1]), 
+//				fn_active, fn_derv));
+//		}
+//	}
+//
+//	void add_layer(	const double ndin, 
+//		const double ndout, 
+//		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
+//		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
+//	{
+//		weights.push_back(make_tuple(randn(ndin, ndout), fn_active, fn_derv));
+//	}
+//
+//public:
+//	virtual double infer(const vec& din) const
+//	{
+//		vec dout = din;
+//		for(auto layer : weights)
+//		{
+//			dout = get<0>(layer).t() * dout;
+//			for_each(dout.begin(), dout.end(), [&](double& elem){elem = get<1>(layer)(elem);});
+//		}
+//
+//		return dout[0];
+//	}
+//
+//public:
+//	virtual void train_once(vec& head, vec& tail, const vec& dout, double alpha)
+//	{
+//		vector<vec>	hiddens;
+//		hiddens.push_back(join_cols(head, tail));
+//		for(auto layer : weights)
+//		{
+//			vec hidden_out = get<0>(layer).t() * hiddens.back();
+//			for_each(hidden_out.begin(), hidden_out.end(), [&](double& elem){elem = get<1>(layer)(elem);});
+//			hiddens.push_back(hidden_out);
+//		}
+//
+//		vec derv = sign(hiddens.back() - dout);
+//		for(auto layer=weights.size(); layer > 0; --layer)
+//		{
+//			for(auto dim_derv=0; dim_derv<derv.n_elem; ++dim_derv)
+//			{
+//				derv[dim_derv] *= get<2>(weights[layer-1])(hiddens[layer][dim_derv]);
+//			}
+//
+//			get<0>(weights[layer-1]) -= alpha * hiddens[layer-1] * derv.t();
+//			derv = get<0>(weights[layer-1]) * derv;
+//		}
+//		
+//		head -= alpha * derv.rows(0, head.size()-1);
+//		tail -= alpha * derv.rows(head.size(), head.size() + tail.size()-1);
+//	}
+//};
+//
+//class OrbitE_Deep
+//	:public OrbitModel
+//{
+//protected:
+//	vector<MultiLayerPerceptron> mlp;
+//
+//public:
+//	OrbitE_Deep(	
+//		const Dataset& dataset,
+//		const TaskType& task_type,
+//		const string& logging_base_path,
+//		int dim,
+//		double alpha,
+//		double training_threshold,
+//		vector<int>& na,
+//		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
+//		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
+//		:OrbitModel(dataset, task_type, logging_base_path, 
+//		dim, alpha, training_threshold)
+//	{
+//		logging.record()<<"\t[Name]\tOrbitE Deep";
+//		logging.record()<<"\t[Network Structure]\t";
+//		for(auto i=0; i<na.size(); ++i)
+//		{
+//			logging<<na[i]<<'\t';
+//		}
+//
+//		for(auto i=0; i<count_relation(); ++i)
+//		{
+//			mlp.push_back(MultiLayerPerceptron(na, fn_active, fn_derv));
+//		}
+//
+//		embedding_orbit = zeros(count_relation());
+//	}
+//
+//	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
+//	{
+//		vec& head = embedding_entity[triplet.first.first];
+//		vec& tail = embedding_entity[triplet.first.second];
+//		vec& relation = embedding_relation[triplet.second];
+//		double& orbit = embedding_orbit[triplet.second];
+//
+//		double score = fabs(mlp[triplet.second].infer(join_cols(head, tail)) - orbit*orbit);
+//		return - score;
+//	}
+//
+//	virtual void train_triplet( const pair<pair<int, int>,int>& triplet ) 
+//	{
+//		vec& head = embedding_entity[triplet.first.first];
+//		vec& tail = embedding_entity[triplet.first.second];
+//		vec& relation = embedding_relation[triplet.second];
+//		double& orbit = embedding_orbit[triplet.second];
+//
+//		pair<pair<int, int>,int> triplet_f;
+//		data_model.sample_false_triplet(triplet, triplet_f);
+//
+//		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+//			return;
+//
+//		vec& head_f = embedding_entity[triplet_f.first.first];
+//		vec& tail_f = embedding_entity[triplet_f.first.second];
+//		vec& relation_f = embedding_relation[triplet_f.second];
+//
+//		double factor = 
+//			- sign(mlp[triplet.second].infer(join_cols(head, tail)) - orbit*orbit);
+//		double factor_f = 
+//			- sign(mlp[triplet_f.second].infer(join_cols(head_f, tail_f)) - orbit*orbit);
+//
+//		vec dout(1);
+//		dout << orbit*orbit;
+//		
+//		mlp[triplet.second].train_once(head, tail, dout, alpha);
+//		mlp[triplet.second].train_once(head_f, tail_f, dout, -alpha);
+//
+//		//orbit -= alpha * alpha *(factor - factor_f)*orbit;
+//
+//		if (norm(head) > 1.0)
+//			head = normalise(head);
+//
+//		if (norm(tail) > 1.0)
+//			tail = normalise(tail);
+//
+//		if (norm(relation) > 1.0)
+//			relation = normalise(relation);
+//
+//		if (norm(head_f) > 1.0)
+//			head_f = normalise(head_f);
+//
+//		if (norm(tail_f) > 1.0)
+//			tail_f = normalise(tail_f);
+//	}
+//};
 
 
 class OrbitE_H

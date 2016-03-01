@@ -42,7 +42,7 @@ public:
 
 		topics.resize(model->count_entity());
 
-		fstream fin(type_file);
+		fstream fin(type_file.c_str());
 		while (!fin.eof())
 		{
 			boost::char_separator<char>	sep("\t ");

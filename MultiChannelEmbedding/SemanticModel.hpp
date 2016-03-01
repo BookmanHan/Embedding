@@ -37,7 +37,7 @@ public:
 		logging.record() << "\t[Topic Model]\tLSI";
 		logging.record() << "\t[Balance]\t" << balance;
 
-		ifstream fin(semantic_file, ios::binary);
+		ifstream fin(semantic_file.c_str(), ios::binary);
 		storage_vmat<double>::load(v_semantics, fin);
 		fin.close();
 
@@ -89,7 +89,7 @@ public:
 		logging.record() << "\t[Topic Model]\tLSI";
 		logging.record() << "\t[Balance]\t" << balance;
 
-		ifstream fin(semantic_file, ios::binary);
+		ifstream fin(semantic_file.c_str(), ios::binary);
 		storage_vmat<double>::load(v_semantics, fin);
 		fin.close();
 
@@ -195,10 +195,10 @@ public:
 public:
 	virtual vec entity_representation(int entity_id) const override
 	{
-		if (data_model.zeroshot_pointer + 1 < data_model.set_entity.size())
+		if (data_model.zeroshot_pointer + 10 < data_model.set_entity.size())
 			return v_semantics[entity_id];
 		else
-			return join_cols(zeros(dim), v_semantics[entity_id]);
+			return join_cols(embedding_entity[entity_id], v_semantics[entity_id]);
 	}
 };
 
@@ -232,7 +232,7 @@ public:
 
 		documents.resize(count_entity() + 10);
 
-		fstream fin(semantic_file_raw);
+		fstream fin(semantic_file_raw.c_str());
 		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
 		while (!fin.eof())
 		{
@@ -285,7 +285,7 @@ public:
 
 		documents.resize(count_entity() + 10);
 
-		fstream fin(semantic_file_raw);
+		fstream fin(semantic_file_raw.c_str());
 		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
 		while (!fin.eof())
 		{
@@ -339,7 +339,7 @@ public:
 
 		documents.resize(count_entity() + 10);
 
-		fstream fin(semantic_file_raw);
+		fstream fin(semantic_file_raw.c_str());
 		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
 		while (!fin.eof())
 		{
@@ -392,7 +392,7 @@ public:
 
 		documents.resize(count_entity() + 10);
 
-		fstream fin(semantic_file_raw);
+		fstream fin(semantic_file_raw.c_str());
 		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
 		while (!fin.eof())
 		{

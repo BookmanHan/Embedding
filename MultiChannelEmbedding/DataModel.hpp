@@ -220,7 +220,7 @@ public:
 
 	void load_training(const string& filename)
 	{
-		fstream fin(filename);
+		fstream fin(filename.c_str());
 		while(!fin.eof())
 		{
 			string head, tail, relation;
@@ -279,7 +279,7 @@ public:
 		vector<pair<pair<int, int>,int>>& vin_false,
 		bool self_sampling = false)
 	{
-		fstream fin(filename);
+		fstream fin(filename.c_str());
 		if (self_sampling == false)
 		{
 			while(!fin.eof())
