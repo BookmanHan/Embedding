@@ -546,13 +546,13 @@ public:
 //class MultiLayerPerceptron
 //{
 //protected:
-//	vector<tuple<mat, function<double(const double&)>, function<double(const double&)>>>	weights;
+//	vector<tuple<mat, boost::function<double(const double&)>, boost::function<double(const double&)>>>	weights;
 //	const vector<int>																		network_architecture;
 //
 //public:
 //	MultiLayerPerceptron(const vector<int>& network_architecture,
-//		function<double(const double&)> fn_active = [](const double x){return (exp(x)-exp(-x))/(exp(x)+exp(-x));}, 
-//		function<double(const double&)> fn_derv = [](const double x){return 1-x*x;})
+//		boost::function<double(const double&)> fn_active = [](const double x){return (exp(x)-exp(-x))/(exp(x)+exp(-x));}, 
+//		boost::function<double(const double&)> fn_derv = [](const double x){return 1-x*x;})
 //		:network_architecture(network_architecture)
 //	{
 //		for(auto layer=0; layer<network_architecture.size()-1; ++layer)
@@ -565,8 +565,8 @@ public:
 //
 //	void add_layer(	const double ndin, 
 //		const double ndout, 
-//		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
-//		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
+//		boost::function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
+//		boost::function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
 //	{
 //		weights.push_back(make_tuple(randn(ndin, ndout), fn_active, fn_derv));
 //	}
@@ -628,8 +628,8 @@ public:
 //		double alpha,
 //		double training_threshold,
 //		vector<int>& na,
-//		function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
-//		function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
+//		boost::function<double(const double&)> fn_active = [](const double x){return 1.0/(1.0+exp(-x));}, 
+//		boost::function<double(const double&)> fn_derv = [](const double x){return x*(1-x);})
 //		:OrbitModel(dataset, task_type, logging_base_path, 
 //		dim, alpha, training_threshold)
 //	{
@@ -995,9 +995,9 @@ class OrbitE_KS
 {
 protected:
 	vector<vec>	embedding_weights;
-	function<double(const vec& a, const vec& b)>	kernel;	
-	function<vec(const vec& a, const vec& b)>		derv_a;
-	function<vec(const vec& a, const vec& b)>		derv_b;
+	boost::function<double(const vec& a, const vec& b)>	kernel;	
+	boost::function<vec(const vec& a, const vec& b)>		derv_a;
+	boost::function<vec(const vec& a, const vec& b)>		derv_b;
 
 public:
 	OrbitE_KS(	
@@ -1007,9 +1007,9 @@ public:
 		int dim,
 		double alpha,
 		double training_threshold,
-		function<double(const vec& a, const vec& b)> kernel,
-		function<vec(const vec& a, const vec& b)> derv_a,
-		function<vec(const vec& a, const vec& b)> derv_b)
+		boost::function<double(const vec& a, const vec& b)> kernel,
+		boost::function<vec(const vec& a, const vec& b)> derv_a,
+		boost::function<vec(const vec& a, const vec& b)> derv_b)
 		:OrbitModel(dataset, task_type, logging_base_path, 
 		dim, alpha, training_threshold), 
 		kernel(kernel), derv_a(derv_a), derv_b(derv_b)
@@ -1100,9 +1100,9 @@ class OrbitE_KHDA
 {
 protected:
 	vector<vec>	embedding_weights;
-	function<double(const vec& a, const vec& b)>	kernel;	
-	function<vec(const vec& a, const vec& b)>		derv_a;
-	function<vec(const vec& a, const vec& b)>		derv_b;
+	boost::function<double(const vec& a, const vec& b)>	kernel;	
+	boost::function<vec(const vec& a, const vec& b)>		derv_a;
+	boost::function<vec(const vec& a, const vec& b)>		derv_b;
 
 public:
 	OrbitE_KHDA(	
@@ -1112,9 +1112,9 @@ public:
 		int dim,
 		double alpha,
 		double training_threshold,
-		function<double(const vec& a, const vec& b)> kernel,
-		function<vec(const vec& a, const vec& b)> derv_a,
-		function<vec(const vec& a, const vec& b)> derv_b)
+		boost::function<double(const vec& a, const vec& b)> kernel,
+		boost::function<vec(const vec& a, const vec& b)> derv_a,
+		boost::function<vec(const vec& a, const vec& b)> derv_b)
 		:OrbitModel(dataset, task_type, logging_base_path, 
 		dim, alpha, training_threshold),kernel(kernel), derv_a(derv_a), derv_b(derv_b)
 	{
@@ -1206,9 +1206,9 @@ class OrbitE_KHDAN
 {
 protected:
 	vector<vec>	embedding_weights;
-	function<double(const vec& a, const vec& b)>	kernel;	
-	function<vec(const vec& a, const vec& b)>		derv_a;
-	function<vec(const vec& a, const vec& b)>		derv_b;
+	boost::function<double(const vec& a, const vec& b)>	kernel;	
+	boost::function<vec(const vec& a, const vec& b)>		derv_a;
+	boost::function<vec(const vec& a, const vec& b)>		derv_b;
 
 public:
 	OrbitE_KHDAN(	
@@ -1218,9 +1218,9 @@ public:
 		int dim,
 		double alpha,
 		double training_threshold,
-		function<double(const vec& a, const vec& b)> kernel,
-		function<vec(const vec& a, const vec& b)> derv_a,
-		function<vec(const vec& a, const vec& b)> derv_b)
+		boost::function<double(const vec& a, const vec& b)> kernel,
+		boost::function<vec(const vec& a, const vec& b)> derv_a,
+		boost::function<vec(const vec& a, const vec& b)> derv_b)
 		:OrbitModel(dataset, task_type, logging_base_path, 
 		dim, alpha, training_threshold),kernel(kernel), derv_a(derv_a), derv_b(derv_b)
 	{

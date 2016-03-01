@@ -24,7 +24,7 @@ public:
 
 	static void load(vector<Mat<T>>& vmatin, ifstream& fin)
 	{
-		vector<Mat<T>>::size_type n_size;
+		arma::uword n_size;
 		fin.read((char*)&n_size, sizeof(n_size));
 		vmatin.resize(n_size);
 
@@ -57,7 +57,7 @@ public:
 
 	static void load(vector<Col<T>>& vmatin, ifstream& fin)
 	{
-		vector<Col<T>>::size_type n_size;
+		arma::uword n_size;
 		fin.read((char*)&n_size, sizeof(n_size));
 		vmatin.resize(n_size);
 

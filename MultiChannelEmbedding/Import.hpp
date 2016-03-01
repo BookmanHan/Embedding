@@ -15,9 +15,8 @@
 #include <iomanip>
 #include <bitset>
 #include <queue>
-//#include <functional>
-#include <iterator>
 #include <boost/function.hpp>
+#include <iterator>
 #include "Storage.hpp"
 
 using namespace std;
