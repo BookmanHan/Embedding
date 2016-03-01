@@ -70,6 +70,8 @@ public:
 		while(total_epos --> 0)
 		{
 			std::cout<<epos<<',';
+			std::cout.flush();
+
 			train();
 
 			if (task_type == TripletClassification)
@@ -189,6 +191,8 @@ public:
 		logging.record()<<epos<<"\t Accuracy = "
 			<<real_hit/(data_model.data_test_true.size() + data_model.data_test_false.size())
 			<<", Best = "<<best_triplet_result;
+
+		std::cout.flush();
 	}
 
 	void test_link_prediction(int hit_rank = 10, const int part = 0)
@@ -216,6 +220,8 @@ public:
 			if (cnt%100 == 0)
 			{
 				std::cout<<cnt<<',';
+				std::cout.flush();
+
 			}
 
 			pair<pair<int, int>, int> t = *i;
@@ -348,6 +354,7 @@ public:
 			if (cnt % 100 == 0)
 			{
 				std::cout << cnt << ',';
+				std::cout.flush();
 			}
 
 			pair<pair<int, int>, int> t = *i;
