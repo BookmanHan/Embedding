@@ -553,38 +553,6 @@ public:
 	}
 
 public:
-	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet)
-	{
-		vec head;
-		vec tail;
-
-		if (triplet.first.first >= data_model.zeroshot_pointer)
-		{
-			head = mat_transfer * v_semantics[triplet.first.first];
-			head = normalise(head);
-		}
-		else
-		{
-			head = embedding_entity[triplet.first.first];
-		}
-
-		if (triplet.first.second >= data_model.zeroshot_pointer)
-		{
-			tail = mat_transfer * v_semantics[triplet.first.second];
-			tail = normalise(tail);
-		}
-		else
-		{
-			tail = embedding_entity[triplet.first.second];
-		}
-
-		vec semantic = semantic_composition(triplet);
-		vec error = head + embedding_relation[triplet.second]- tail;
-
-		return	-balance * sum(abs(error - as_scalar(semantic.t()*error)*semantic))
-			- sum(abs(error));
-	}
-
 	virtual void train(bool last_time = false) override
 	{
 		SemanticModel_Joint::train(last_time);
@@ -596,6 +564,12 @@ public:
 			for (auto i = 0; i < data_model.zeroshot_pointer; ++i)
 			{
 				mat_transfer += embedding_entity[i] * v_semantics[i].t();
+			}
+			
+			for (auto i = data_model.zeroshot_pointer; i < count_entity(); ++i)
+			{
+				embedding_entity[i] = mat_transfer * v_semantics[i];
+				embedding_entity[i] = normalise(embedding_entity[i]);
 			}
 		}
 	}

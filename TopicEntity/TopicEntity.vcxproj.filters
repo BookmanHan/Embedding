@@ -7,8 +7,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TopicEntity.cu">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <CudaCompile Include="TopicEmbedding.cu" />
   </ItemGroup>
 </Project>

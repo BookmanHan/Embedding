@@ -13,29 +13,33 @@
 #include <boost/format.hpp>  
 #include <boost/tokenizer.hpp>  
 #include <boost/algorithm/string.hpp>  
-#include <viennacl/vector.hpp>
 #include <viennacl/matrix.hpp>
+#include <viennacl/scalar.hpp>
+#include <viennacl/vector.hpp>
 
 using namespace std;
 using namespace arma;
 using namespace boost;
 
-typedef viennacl::scalar<float>	ScalarType;
+namespace vn = viennacl;
 
 int main()
 {
-	std::vector<ScalarType>      stl_vec(1000);
-	viennacl::vector<ScalarType> vcl_vec(100000);
+	vn::matrix<float> mat_A;
+	vn::vector<float> vec_b;
+	vn::vector<float> vec_x;
 
-	for (size_t i = 0; i < stl_vec.size(); ++i)
-		stl_vec[i] = i;
+	mat A = randu(1000, 1000);
+	vec b = randu(1000);
 
-	int a;
-	copy(stl_vec.begin(), stl_vec.end(), vcl_vec.begin());
+	while (true)
+	{
+		copy(b.begin(), b.end(), b.begin());
 
-	cout << "Ready";
-	cin >> a;
-	copy(vcl_vec.begin(), vcl_vec.end(), stl_vec.begin());
+		vec_x = vn::linalg::prod(mat_A, vec_b);
+
+		cout << 'a';
+	}
 
 	return 0;
 }

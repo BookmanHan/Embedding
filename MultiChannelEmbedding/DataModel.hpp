@@ -102,19 +102,24 @@ public:
 			set_relation_tail[i->second].insert(i->first.second);
 		}
 
-		for(auto & elem : prob_head)
+#pragma omp parallel for
+#pragma ivdep
+		for (auto elem = prob_head.begin(); elem != prob_head.end(); ++elem)
 		{
-			elem /= data_train.size();
+			*elem /= data_train.size();
 		}
 
-		for(auto & elem : prob_tail)
+#pragma omp parallel for
+#pragma ivdep
+		for (auto elem = prob_tail.begin(); elem != prob_tail.end(); ++elem)
 		{
-			elem /= data_train.size();
+			*elem /= data_train.size();
 		}
 
 		double threshold = 1.5;
 		relation_type.resize(set_relation.size());
-		for(auto i=0; i<set_relation.size(); ++i)
+
+ 		for(auto i=0; i<set_relation.size(); ++i)
 		{
 			if (relation_tph[i]<threshold && relation_hpt[i]<threshold)
 			{
