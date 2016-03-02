@@ -220,19 +220,19 @@ public:
 		tail_f -= alpha * sign(head_f + relation_f - tail_f);
 		relation_f += alpha * sign(head_f + relation_f - tail_f);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 
@@ -361,22 +361,22 @@ public:
 		relation_f += alpha * factor_false;
 		weight += 2 * alpha * (factor_true * as_scalar(head.t()*weight) - factor_false * as_scalar(tail.t()*weight));
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
-		if (norm(weight) > 1.0)
+		if (norm_L2(weight) > 1.0)
 			weight = normalise(weight);
 	}
 
@@ -969,10 +969,10 @@ public:
 		relation_f += alpha * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
 
-		if (norm(relation, 1) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(relation_f, 1) > 1.0)
+		if (norm_L2(relation_f) > 1.0)
 			relation_f = normalise(relation_f);
 	}
 
@@ -997,16 +997,16 @@ public:
 		vec& head_f = embedding_entity[triplet_f.first.first];
 		vec& tail_f = embedding_entity[triplet_f.first.second];
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
 		if (be_weight_normalized)
@@ -1241,10 +1241,10 @@ public:
 		relation_f += factor * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]);
 		
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(relation_f) > 1.0)
+		if (norm_L2(relation_f) > 1.0)
 			relation_f = normalise(relation_f);
 	}
 
@@ -1288,16 +1288,16 @@ public:
 		vec& head_f = embedding_entity[triplet_f.first.first];
 		vec& tail_f = embedding_entity[triplet_f.first.second];
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
 		if (be_weight_normalized)
@@ -1563,10 +1563,10 @@ public:
 		relation_f += alpha * sign(head_f + relation_f - tail_f)
 			* prob_local_false/prob_false * fabs(weights_clusters[triplet.second][cluster]) / total_variance_f;
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(relation_f) > 1.0)
+		if (norm_L2(relation_f) > 1.0)
 			relation_f = normalise(relation_f);
 	}
 
@@ -1608,16 +1608,16 @@ public:
 		vec& head_f = embedding_entity[triplet_f.first.first];
 		vec& tail_f = embedding_entity[triplet_f.first.second];
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
 		if (be_weight_normalized)

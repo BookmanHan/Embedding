@@ -229,19 +229,19 @@ public:
 		tail_f += alpha * factor_f * sign(head_f + relation_f - tail);
 		orbit -= alpha *(factor - factor_f)*orbit;
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -309,19 +309,19 @@ public:
 		tail_f += alpha * factor_f * (head_f + relation_f - tail);
 		orbit -= alpha *(factor - factor_f)*orbit;
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -411,19 +411,19 @@ public:
 
 		orbit -= alpha *(factor - factor_f) * orbit;
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -526,19 +526,19 @@ public:
 
 		orbit -= alpha *(factor - factor_f)*orbit;
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -689,19 +689,19 @@ public:
 //
 //		//orbit -= alpha * alpha *(factor - factor_f)*orbit;
 //
-//		if (norm(head) > 1.0)
+//		if (norm_L2(head) > 1.0)
 //			head = normalise(head);
 //
-//		if (norm(tail) > 1.0)
+//		if (norm_L2(tail) > 1.0)
 //			tail = normalise(tail);
 //
-//		if (norm(relation) > 1.0)
+//		if (norm_L2(relation) > 1.0)
 //			relation = normalise(relation);
 //
-//		if (norm(head_f) > 1.0)
+//		if (norm_L2(head_f) > 1.0)
 //			head_f = normalise(head_f);
 //
-//		if (norm(tail_f) > 1.0)
+//		if (norm_L2(tail_f) > 1.0)
 //			tail_f = normalise(tail_f);
 //	}
 //};
@@ -777,22 +777,22 @@ public:
 
 		//orbit -= alpha *(factor - factor_f);
 
-		//if (norm(weight) > 1.0)
+		//if (norm_L2(weight) > 1.0)
 		//	weight = normalise(weight);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -871,22 +871,22 @@ public:
 
 		orbit -= alpha *(factor - factor_f);
 
-		if (norm(weight) > 1.0)
+		if (norm_L2(weight) > 1.0)
 			weight = normalise(weight);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -970,22 +970,22 @@ public:
 
 		orbit -= alpha *(factor - factor_f);
 
-		if (norm(weight) > 1.0)
+		if (norm_L2(weight) > 1.0)
 			weight = normalise(weight);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -1078,19 +1078,19 @@ public:
 
 		orbit -= alpha *(factor - factor_f);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -1181,22 +1181,22 @@ public:
 
 		orbit -= alpha *(factor - factor_f);
 
-		if (norm(weight) > 1.0)
+		if (norm_L2(weight) > 1.0)
 			weight = normalise(weight);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };
@@ -1284,22 +1284,22 @@ public:
 
 		orbit -= alpha *(factor - factor_f);
 
-		if (norm(weight) > 1.0)
+		if (norm_L2(weight) > 1.0)
 			weight = normalise(weight);
 
-		if (norm(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 	}
 };

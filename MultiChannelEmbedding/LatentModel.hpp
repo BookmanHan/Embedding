@@ -262,17 +262,17 @@ public:
 		relation_out[triplet_f.second] +=
 			alpha * factor_vec % entity[triplet_f.first.second];
 
-		if (norm(entity[triplet.first.first]) > 1)
+		if (norm_L2(entity[triplet.first.first]) > 1)
 			entity[triplet.first.first] = normalise(entity[triplet.first.first]);
-		if (norm(entity[triplet.first.second]) > 1)
+		if (norm_L2(entity[triplet.first.second]) > 1)
 			entity[triplet.first.second] = normalise(entity[triplet.first.second]);
-		if (norm(entity[triplet_f.first.first]) > 1)
+		if (norm_L2(entity[triplet_f.first.first]) > 1)
 			entity[triplet_f.first.first] = normalise(entity[triplet_f.first.first]);
-		if (norm(entity[triplet_f.first.second]) > 1)
+		if (norm_L2(entity[triplet_f.first.second]) > 1)
 			entity[triplet_f.first.second] = normalise(entity[triplet_f.first.second]);
-		//if (norm(relation_in[triplet.second]) > 1)
+		//if (norm_L2(relation_in[triplet.second]) > 1)
 			relation_in[triplet.second] = normalise(relation_in[triplet.second]);
-		//if (norm(relation_out[triplet.second]) > 1)
+		//if (norm_L2(relation_out[triplet.second]) > 1)
 			relation_out[triplet.second] = normalise(relation_out[triplet.second]);
 	}
 };

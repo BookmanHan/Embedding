@@ -44,13 +44,7 @@ double sign(const double& x)
 }
 
 inline
-double norm_common(const mat& m)
+double norm_L2(const vec& m)
 {
-	double re = 0;
-	for(auto i=m.begin(); i!=m.end(); ++i)
-	{
-		re += (*i) * (*i);
-	}
-
-	return sqrt(re);
+	return norm(m, 2);
 }
