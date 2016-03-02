@@ -498,19 +498,19 @@ public:
 		head_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
 		tail_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
 
-		if (norm(head) > 1.0)
+		//if (norm(head) > 1.0)
 			head = normalise(head);
 
-		if (norm(tail) > 1.0)
+		//if (norm(tail) > 1.0)
 			tail = normalise(tail);
 
-		if (norm(relation) > 1.0)
+		//if (norm(relation) > 1.0)
 			relation = normalise(relation);
 
-		if (norm(head_f) > 1.0)
+		//if (norm(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		if (norm(tail_f) > 1.0)
+		//if (norm(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
 		head_sem = normalise(head_sem);
@@ -529,6 +529,9 @@ public:
 class SemanticModel_ZeroShot
 	:public SemanticModel_Joint
 {
+protected:
+	mat		mat_transfer;
+
 public:
 	SemanticModel_ZeroShot(
 		const Dataset& dataset,
@@ -543,18 +546,57 @@ public:
 		double balance,
 		double factor)
 		:SemanticModel_Joint(dataset, file_zeroshot, task_type, logging_base_path, semantic_file,
-			semantic_file_raw, dim, alpha, training_threshold, balance, factor)
+			semantic_file_raw, dim, alpha, training_threshold, balance, factor),
+			mat_transfer(dim, dim)
 	{
 		logging.record() << "\t[Name]\tZeroShot";
 	}
 
 public:
-	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet) override
+	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet)
 	{
-		const vec& semantic = semantic_composition(triplet);
-		double length = as_scalar(semantic.t()*semantic);
-		double p = 2 - (-balance - 1) / length;
+		vec head;
+		vec tail;
 
-		return - p * p * ((p - 1)*(p - 1) + (p - 2)*(p - 2)) * length;
+		if (triplet.first.first >= data_model.zeroshot_pointer)
+		{
+			head = mat_transfer * v_semantics[triplet.first.first];
+			head = normalise(head);
+		}
+		else
+		{
+			head = embedding_entity[triplet.first.first];
+		}
+
+		if (triplet.first.second >= data_model.zeroshot_pointer)
+		{
+			tail = mat_transfer * v_semantics[triplet.first.second];
+			tail = normalise(tail);
+		}
+		else
+		{
+			tail = embedding_entity[triplet.first.second];
+		}
+
+		vec semantic = semantic_composition(triplet);
+		vec error = head + embedding_relation[triplet.second]- tail;
+
+		return	-balance * sum(abs(error - as_scalar(semantic.t()*error)*semantic))
+			- sum(abs(error));
+	}
+
+	virtual void train(bool last_time = false) override
+	{
+		SemanticModel_Joint::train(last_time);
+
+		if (last_time)
+		{
+			mat_transfer = zeros(dim, dim);
+
+			for (auto i = 0; i < data_model.zeroshot_pointer; ++i)
+			{
+				mat_transfer += embedding_entity[i] * v_semantics[i].t();
+			}
+		}
 	}
 };

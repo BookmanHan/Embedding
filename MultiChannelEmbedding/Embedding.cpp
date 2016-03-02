@@ -1,4 +1,3 @@
-#define SSD_LOAD
 #include "Import.hpp"
 #include "Model.hpp"
 #include "Task.hpp"
@@ -20,27 +19,18 @@ int main(int argc, char* argv[])
 	Model* model = nullptr;
 
 	model = new SemanticModel
-		(FB15K, General, report_path, semantic_vfile_FB15K,
-			100, 0.001, 1.8, -2.0);
-	model->run(300);
-	{
-		TopicRegressionTask type_regression((TransE*)model, type_file_FB15K);
-		type_regression.train(500, 0.01);
-		type_regression.test();
-	}
+		(FB15K, LinkPredictionRelation, report_path, 
+			semantic_vfile_FB15K, 100, 0.003, 1.8, -0.2);
+	model->run(3000);
+	model->test();
 	delete model;
 
-	//model = new SemanticModel_Joint
-	//	(FB15K, General, report_path, semantic_vfile_FB15K, semantic_tfile_FB15K,
-	//		100, 0.001, 1.8, -0.2, 0.2);
-	//model->run(3000);
-	//{
-	//	TopicRegressionTask type_regression((TransE*)model, type_file_FB15K);
-	//	type_regression.train(500, 0.01);
-	//	type_regression.test();
-	//
-	//}
-	//delete model;
+	model = new SemanticModel
+		(WN18, LinkPredictionTail, report_path,
+			semantic_vfile_FB15K, 100, 0.001, 6.0, -0.2);
+	model->run(3000);
+	model->test();
+	delete model;
 
 	return 0;
 }

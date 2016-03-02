@@ -7,7 +7,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TopicEntity.cpp">
+    <ClCompile Include="TopicEntity.cu">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
