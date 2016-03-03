@@ -12,9 +12,10 @@ int main(int argc, char* argv[])
 
 	model = new SemanticModel_ZeroShot
 		(FB15K, triple_zeroshot_FB15K, LinkPredictionTailZeroShot, report_path,
-			semantic_vfile_FB15KZS, semantic_tfile_FB15KZS, 100, 0.01, 1.8, -0.2, 0.2);
-	model->run(100);
-	model->test();
+			semantic_vfile_FB15KZS, semantic_tfile_FB15KZS, 100, 0.001, 1.8, -0.2, 0.2);
+	model->run(3);
+	//model->test();
+	
 	delete model;
 
 	return 0;

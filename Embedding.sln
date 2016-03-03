@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Embedding", "MultiChannelEmbedding\MultiChannelEmbedding.vcxproj", "{3A03DF5C-4B95-4B56-877A-EE021EAF207D}"
 EndProject
@@ -17,8 +17,6 @@ Global
 		Python|x64 = Python|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
-		Run|Win32 = Run|Win32
-		Run|x64 = Run|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.CUDA|Win32.ActiveCfg = CUDA|Win32
@@ -37,10 +35,6 @@ Global
 		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Release|Win32.Build.0 = Release|Win32
 		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Release|x64.ActiveCfg = Release|x64
 		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Release|x64.Build.0 = Release|x64
-		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Run|Win32.ActiveCfg = Run|ARM
-		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Run|Win32.Build.0 = Run|Win32
-		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Run|x64.ActiveCfg = Run|x64
-		{3A03DF5C-4B95-4B56-877A-EE021EAF207D}.Run|x64.Build.0 = Run|x64
 		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.CUDA|Win32.ActiveCfg = CUDA|Win32
 		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.CUDA|Win32.Build.0 = CUDA|Win32
 		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.CUDA|x64.ActiveCfg = CUDA|x64
@@ -57,10 +51,6 @@ Global
 		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Release|Win32.Build.0 = Release|Win32
 		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Release|x64.ActiveCfg = Release|x64
 		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Release|x64.Build.0 = Release|x64
-		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Run|Win32.ActiveCfg = Run|Win32
-		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Run|Win32.Build.0 = Run|Win32
-		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Run|x64.ActiveCfg = Run|x64
-		{ADCF636F-1163-435B-B6BD-9CC217B9E19C}.Run|x64.Build.0 = Run|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

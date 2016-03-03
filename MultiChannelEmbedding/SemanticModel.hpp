@@ -435,6 +435,7 @@ public:
 			vec& v_doc = v_semantics[idoc - documents.begin()];
 			vec v_doc_grad = zeros(dim);
 
+#pragma omp parallel for
 			for (auto iword = idoc->begin(); iword < idoc->end(); ++iword)
 			{
 				vec& v_word = topic_words[*iword];
