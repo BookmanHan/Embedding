@@ -141,7 +141,7 @@ public:
 		return	- balance * sum(abs(error - as_scalar(semantic.t()*error)*semantic))
 				- sum(abs(error));
 	}
-	
+
 	virtual void train_triplet(const pair<pair<int, int>, int>& triplet)
 	{
 		vec& head = embedding_entity[triplet.first.first];
@@ -199,6 +199,25 @@ public:
 			return v_semantics[entity_id];
 		else
 			return join_cols(embedding_entity[entity_id], v_semantics[entity_id]);
+	}
+
+public:
+	virtual void save(const string& filename) override
+	{
+		ofstream fout(filename, ios::binary);
+		storage_vmat<double>::save(embedding_entity, fout);
+		storage_vmat<double>::save(embedding_relation, fout);
+		storage_vmat<double>::save(v_semantics, fout);
+		fout.close();
+	}
+
+	virtual void load(const string& filename) override
+	{
+		ifstream fin(filename, ios::binary);
+		storage_vmat<double>::load(embedding_entity, fin);
+		storage_vmat<double>::load(embedding_relation, fin);
+		storage_vmat<double>::load(v_semantics, fin);
+		fin.close();
 	}
 };
 

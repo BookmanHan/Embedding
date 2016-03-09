@@ -492,4 +492,15 @@ public:
 	{
 		return data_model;
 	}
+
+public:
+	virtual void save(const string& filename)
+	{
+		throw exception("Bad Implementation.");
+	}
+
+	virtual void load(const string& filename)
+	{
+		throw exception("Bad Implementation.");
+	}
 };

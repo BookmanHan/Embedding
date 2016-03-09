@@ -3,6 +3,7 @@
 #include "ModelConfig.hpp"
 #include "DataModel.hpp"
 #include "Model.hpp"
+#include "Storage.hpp"
 
 class OrbitModel
 	:public Model
@@ -920,8 +921,6 @@ public:
 		{
 			*i = (2*randu()-1)*sqrt(6.0/dim);
 		}
-
-		//embedding_orbit.fill(dim*dim*4);
 	}
 
 	virtual double prob_triplets( const pair<pair<int, int>,int>& triplet ) 
@@ -987,6 +986,30 @@ public:
 
 		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
+	}
+
+public:
+	virtual void save(const string& filename) override
+	{
+		ofstream fout(filename, ios::binary | ios::out);
+		storage_vmat<double>::save(embedding_entity, fout);
+		storage_vmat<double>::save(embedding_relation, fout);
+		storage_vmat<double>::save(embedding_weights, fout);
+		storage_vec<double>::save(embedding_orbit, fout);
+		storage_vstring::save(data_model.entity_id_to_name, fout);
+		fout.close();
+	}
+
+	virtual void load(const string& filename) override
+	{
+		vector<string> id_to_name;
+		ifstream fin(filename, ios::binary | ios::in);
+		storage_vmat<double>::load(embedding_entity, fin);
+		storage_vmat<double>::load(embedding_relation, fin);
+		storage_vmat<double>::load(embedding_weights, fin);
+		storage_vec<double>::load(embedding_orbit, fin);
+		storage_vstring::load(id_to_name, fin);
+		fin.close();
 	}
 };
 

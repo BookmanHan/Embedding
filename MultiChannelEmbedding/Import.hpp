@@ -48,3 +48,10 @@ double norm_L2(const vec& m)
 {
 	return norm(m, 2);
 }
+
+void message(const string& strout)
+{
+	system((string("mshta vbscript : msgbox(\"") 
+		+ strout 
+		+ string("\", 64, \"Embedding Framework\")(window.close)")).c_str());
+}

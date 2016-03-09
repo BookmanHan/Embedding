@@ -264,6 +264,22 @@ public:
 	{
 		return embedding_relation[relation_id];
 	}
+
+	virtual void save(const string& filename) override
+	{
+		ofstream fout(filename, ios::binary);
+		storage_vmat<double>::save(embedding_entity, fout);
+		storage_vmat<double>::save(embedding_relation, fout);
+		fout.close();
+	}
+
+	virtual void load(const string& filename) override
+	{
+		ifstream fin(filename, ios::binary);
+		storage_vmat<double>::load(embedding_entity, fin);
+		storage_vmat<double>::load(embedding_relation, fin);
+		fin.close();
+	}
 };
 
 class TransE_ESS
