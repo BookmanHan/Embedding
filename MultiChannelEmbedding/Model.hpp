@@ -2,6 +2,7 @@
 #include "Import.hpp"
 #include "ModelConfig.hpp"
 #include "DataModel.hpp"
+#include <boost/progress.hpp>
 
 using namespace std;
 using namespace arma;
@@ -67,11 +68,10 @@ public:
 		logging.record()<<"\t[Epos]\t"<<total_epos;
 
 		-- total_epos;
+		boost::progress_display	cons_bar(total_epos);
 		while(total_epos --> 0)
 		{
-			std::cout<<epos<<',';
-			std::cout.flush();
-
+			++cons_bar;
 			train();
 
 			if (task_type == TripletClassification)
@@ -213,15 +213,15 @@ public:
 
 		int cnt = 0;
 
+		boost::progress_display cons_bar(data_model.data_test_true.size()/100);
+
 #pragma omp parallel for
 		for(auto i=data_model.data_test_true.begin(); i!=data_model.data_test_true.end(); ++i)
 		{
 			++cnt;
 			if (cnt%100 == 0)
 			{
-				std::cout<<cnt<<',';
-				std::cout.flush();
-
+				++ cons_bar;
 			}
 
 			pair<pair<int, int>, int> t = *i;
@@ -300,6 +300,8 @@ public:
 		std::cout<<"Filter.BestHITS = "<<best_link_fhitatten<<endl;
 		logging.record()<<"Filter.BestMEANS = "<<best_link_fmean;
 		logging.record()<<"Filter.BestHITS = "<<best_link_fhitatten;
+
+		std::cout.flush();
 	}
 
 public:

@@ -15,7 +15,7 @@ protected:
 
 protected:
 	const int	dim;
-	const double	alpha;
+	double	alpha;
 	const double	training_threshold;
 
 public:

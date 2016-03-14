@@ -195,6 +195,8 @@ public:
 public:
 	virtual vec entity_representation(int entity_id) const override
 	{
+		return embedding_entity[entity_id];
+
 		if (data_model.zeroshot_pointer + 10 < data_model.set_entity.size())
 			return v_semantics[entity_id];
 		else
