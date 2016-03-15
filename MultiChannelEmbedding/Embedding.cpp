@@ -12,17 +12,17 @@ int main(int argc, char* argv[])
 	Model* model = nullptr;
 	DataModel dm(FB15K);
 
-	model = new TransG_Hiracherical(FB15K, LinkPredictionTail, report_path, 100, 0.0015, 3.0, 1, 0.1);
+	model = new TransG(FB15K, LinkPredictionTail, report_path, 100, 0.0015, 3.0, 1, 0.1);
 	model->run(5000);
 	model->test();
 	delete model;
 
-	model = new TransG_Hiracherical(FB15K, LinkPredictionTail, report_path, 200, 0.0015, 3.0, 1, 0.1);
+	model = new TransG(FB15K, LinkPredictionTail, report_path, 200, 0.0015, 3.0, 1, 0.1);
 	model->run(5000);
 	model->test();
 	delete model;
 
-	model = new TransG_Hiracherical(FB15K, LinkPredictionTail, report_path, 300, 0.0015, 3.0, 1, 0.1);
+	model = new TransG(FB15K, LinkPredictionTail, report_path, 300, 0.0015, 3.0, 1, 0.1);
 	model->run(5000);
 	model->test();
 	delete model;

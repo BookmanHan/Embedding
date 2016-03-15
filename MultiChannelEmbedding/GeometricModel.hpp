@@ -1294,7 +1294,7 @@ public:
 		{
 #pragma omp critical
 			{
-				cout<<"A";
+				//cout<<"A";
 				weights_clusters[triplet.second][size_clusters[triplet.second]] = CRP_factor;
 				embedding_clusters[triplet.second][size_clusters[triplet.second]] = (2*randu(dim,1)-1)*sqrt(6.0/dim); //tail - head;
 				++ size_clusters[triplet.second];
