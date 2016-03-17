@@ -520,19 +520,19 @@ public:
 		head_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
 		tail_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
 
-		//if (norm_L2(head) > 1.0)
+		if (norm_L2(head) > 1.0)
 			head = normalise(head);
 
-		//if (norm_L2(tail) > 1.0)
+		if (norm_L2(tail) > 1.0)
 			tail = normalise(tail);
 
-		//if (norm_L2(relation) > 1.0)
+		if (norm_L2(relation) > 1.0)
 			relation = normalise(relation);
 
-		//if (norm_L2(head_f) > 1.0)
+		if (norm_L2(head_f) > 1.0)
 			head_f = normalise(head_f);
 
-		//if (norm_L2(tail_f) > 1.0)
+		if (norm_L2(tail_f) > 1.0)
 			tail_f = normalise(tail_f);
 
 		head_sem = normalise(head_sem);

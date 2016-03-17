@@ -10,19 +10,9 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(6);
 
 	Model* model = nullptr;
-	DataModel dm(FB15K);
 
-	model = new TransG(FB15K, LinkPredictionTail, report_path, 100, 0.0015, 3.0, 1, 0.1);
-	model->run(5000);
-	model->test();
-	delete model;
-
-	model = new TransG(FB15K, LinkPredictionTail, report_path, 200, 0.0015, 3.0, 1, 0.1);
-	model->run(5000);
-	model->test();
-	delete model;
-
-	model = new TransG(FB15K, LinkPredictionTail, report_path, 300, 0.0015, 3.0, 1, 0.1);
+	model = new SemanticModel_Joint(FB15K, LinkPredictionTail, report_path, 
+		semantic_vfile_FB15K, semantic_tfile_FB15K, 100, 0.001, 1.8, -0.2, 0.2);
 	model->run(5000);
 	model->test();
 	delete model;
