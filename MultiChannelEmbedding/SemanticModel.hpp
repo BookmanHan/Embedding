@@ -456,7 +456,6 @@ public:
 			vec& v_doc = v_semantics[idoc - documents.begin()];
 			vec v_doc_grad = zeros(dim);
 
-#pragma omp parallel for
 			for (auto iword = idoc->begin(); iword < idoc->end(); ++iword)
 			{
 				vec& v_word = topic_words[*iword];
@@ -505,8 +504,8 @@ public:
 		head -= alpha * balance * grad + alpha * sign(error);
 		tail += alpha * balance * grad + alpha * sign(error);
 		relation -= alpha * balance * grad + alpha * sign(error);
-		head_sem -= alpha * balance * factor * projection * (1 - length) * error;
-		tail_sem -= alpha * balance * factor * projection * (1 - length) * error;
+		head_sem -= alpha * balance * factor * projection * sign(error - projection*semantic);
+		tail_sem -= alpha * balance * factor * projection * sign(error - projection*semantic);
 
 		vec semantic_f = semantic_composition(triplet_f);
 		vec error_f = head_f + relation_f - tail_f;
@@ -517,8 +516,8 @@ public:
 		head_f += alpha * balance * grad_f + alpha * sign(error_f);
 		tail_f -= alpha * balance * grad_f + alpha * sign(error_f);
 		relation_f += alpha * balance * grad_f + alpha * sign(error_f);
-		head_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
-		tail_sem_f += alpha * balance * factor * projection_f * (1 - length_f) * error_f;
+		head_sem_f += alpha * balance * factor * projection_f * sign(error_f - projection_f*semantic_f);
+		tail_sem_f += alpha * balance * factor * projection_f * sign(error_f - projection_f*semantic_f);
 
 		if (norm_L2(head) > 1.0)
 			head = normalise(head);

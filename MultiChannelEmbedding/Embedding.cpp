@@ -11,9 +11,9 @@ int main(int argc, char* argv[])
 
 	Model* model = nullptr;
 
-	model = new SemanticModel_Joint(FB15K, LinkPredictionTail, report_path, 
+	model = new SemanticModel_Joint(FB15K, LinkPredictionTail, report_path,
 		semantic_vfile_FB15K, semantic_tfile_FB15K, 100, 0.001, 1.8, -0.2, 0.2);
-	model->run(5000);
+	model->run(500);
 	model->test();
 	delete model;
 
