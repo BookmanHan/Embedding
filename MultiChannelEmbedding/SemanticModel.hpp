@@ -138,7 +138,8 @@ public:
 			+ embedding_relation[triplet.second]
 			- embedding_entity[triplet.first.second];
 
-		return	- balance * sum(abs(error - as_scalar(semantic.t()*error)*semantic))
+		return	- balance * as_scalar((error - as_scalar(semantic.t()*error)*semantic).t() 
+			*(error - as_scalar(semantic.t()*error)*semantic))
 				- sum(abs(error));
 	}
 
@@ -161,7 +162,7 @@ public:
 		vec semantic = semantic_composition(triplet);
 		vec error = head + relation - tail;
 		double projection = as_scalar(semantic.t()*error);
-		vec grad = error - projection * (2 - projection) * semantic;
+		vec grad = (error - projection * semantic);
 		
 		head -= alpha * balance * grad + alpha * sign(error);
 		tail += alpha * balance * grad + alpha * sign(error);
@@ -170,7 +171,7 @@ public:
 		vec semantic_f = semantic_composition(triplet_f);
 		vec error_f = head_f + relation_f - tail_f;
 		double projection_f = as_scalar(semantic_f.t()*error_f);
-		vec grad_f = error_f - projection_f * (2 - projection_f) * semantic_f;
+		vec grad_f = (error_f - projection_f * semantic_f);
 
 		head_f += alpha * balance * grad_f + alpha * sign(error_f);
 		tail_f -= alpha * balance * grad_f + alpha * sign(error_f);
@@ -499,25 +500,25 @@ public:
 		vec error = head + relation - tail;
 		double projection = as_scalar(semantic.t()*error);
 		double length = as_scalar(semantic.t()*semantic);
-		vec grad = error - projection * (2 - projection) * semantic;
+		vec grad = error - projection * semantic;
 
 		head -= alpha * balance * grad + alpha * sign(error);
 		tail += alpha * balance * grad + alpha * sign(error);
 		relation -= alpha * balance * grad + alpha * sign(error);
-		head_sem -= alpha * balance * factor * projection * sign(error - projection*semantic);
-		tail_sem -= alpha * balance * factor * projection * sign(error - projection*semantic);
+		head_sem += alpha * balance * factor * projection * grad;
+		tail_sem += alpha * balance * factor * projection * grad;
 
 		vec semantic_f = semantic_composition(triplet_f);
 		vec error_f = head_f + relation_f - tail_f;
 		double projection_f = as_scalar(semantic_f.t()*error_f);
 		double length_f = as_scalar(semantic_f.t()*semantic_f);
-		vec grad_f = error_f - projection_f * (2 - projection_f) * semantic_f;
+		vec grad_f = error_f - projection_f  * semantic_f;
 
 		head_f += alpha * balance * grad_f + alpha * sign(error_f);
 		tail_f -= alpha * balance * grad_f + alpha * sign(error_f);
 		relation_f += alpha * balance * grad_f + alpha * sign(error_f);
-		head_sem_f += alpha * balance * factor * projection_f * sign(error_f - projection_f*semantic_f);
-		tail_sem_f += alpha * balance * factor * projection_f * sign(error_f - projection_f*semantic_f);
+		head_sem_f -= alpha * balance * factor * projection_f * grad_f;
+		tail_sem_f -= alpha * balance * factor * projection_f * grad_f;
 
 		if (norm_L2(head) > 1.0)
 			head = normalise(head);

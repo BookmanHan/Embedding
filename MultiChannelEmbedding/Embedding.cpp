@@ -10,9 +10,8 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(6);
 
 	Model* model = nullptr;
-
-	model = new SemanticModel_Joint(FB15K, LinkPredictionTail, report_path,
-		semantic_vfile_FB15K, semantic_tfile_FB15K, 100, 0.001, 1.8, -0.2, 0.2);
+	model = new SemanticModel(FB15K, LinkPredictionTail, report_path,
+		semantic_vfile_FB15K, 100, 0.01, 2.0, -0.4);
 	model->run(500);
 	model->test();
 	delete model;
