@@ -127,6 +127,8 @@ public:
 public:
 	virtual const vec semantic_composition(const pair<pair<int, int>, int>& triplet) const
 	{
+		return (v_semantics[triplet.first.first] + v_semantics[triplet.first.second])
+			/ max(1e-5, sum(abs(v_semantics[triplet.first.first] + v_semantics[triplet.first.second])));
 		return normalise(v_semantics[triplet.first.first] + v_semantics[triplet.first.second]);
 	}
 
@@ -149,7 +151,7 @@ public:
 		vec& relation = embedding_relation[triplet.second];
 
 		pair<pair<int, int>, int> triplet_f;
-		data_model.sample_false_triplet_relation(triplet, triplet_f);
+		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
 			return;
@@ -218,6 +220,7 @@ public:
 	virtual void load(const string& filename) override
 	{
 		ifstream fin(filename, ios::binary);
+
 		storage_vmat<double>::load(embedding_entity, fin);
 		storage_vmat<double>::load(embedding_relation, fin);
 		storage_vmat<double>::load(v_semantics, fin);
@@ -486,7 +489,7 @@ public:
 		vec& tail_sem = v_semantics[triplet.first.second];
 
 		pair<pair<int, int>, int> triplet_f;
-		data_model.sample_false_triplet_relation(triplet, triplet_f);
+		data_model.sample_false_triplet(triplet, triplet_f);
 
 		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
 			return;
@@ -507,8 +510,12 @@ public:
 		head -= alpha * balance * grad + alpha * sign(error);
 		tail += alpha * balance * grad + alpha * sign(error);
 		relation -= alpha * balance * grad + alpha * sign(error);
-		head_sem += alpha * balance * factor * projection * sign(error - projection * semantic);
-		tail_sem += alpha * balance * factor * projection * sign(error - projection * semantic);
+		head_sem += alpha * balance * factor * projection
+			* (sign(error - projection * semantic) -
+			as_scalar(semantic.t()*sign(error - projection * semantic)) * sign(head_sem + tail_sem));
+		tail_sem += alpha * balance * factor 
+			* (sign(error - projection * semantic) -
+			as_scalar(semantic.t()*sign(error - projection * semantic)) * sign(head_sem + tail_sem));
 
 		vec semantic_f = semantic_composition(triplet_f);
 		vec error_f = head_f + relation_f - tail_f;
@@ -520,8 +527,12 @@ public:
 		head_f += alpha * balance * grad_f + alpha * sign(error_f);
 		tail_f -= alpha * balance * grad_f + alpha * sign(error_f);
 		relation_f += alpha * balance * grad_f + alpha * sign(error_f);
-		head_sem_f -= alpha * balance * factor * projection_f * sign(error_f - projection_f * semantic_f);
-		tail_sem_f -= alpha * balance * factor * projection_f * sign(error_f - projection_f * semantic_f);
+		head_sem_f -= alpha * balance * factor * projection_f 
+			* (sign(error_f - projection_f * semantic_f) -
+			as_scalar(semantic_f.t()*sign(error_f - projection_f * semantic_f)) * sign(head_sem_f + tail_sem_f));
+		tail_sem_f -= alpha * balance * factor * projection_f 
+			* (sign(error_f - projection_f * semantic_f) -
+			as_scalar(semantic_f.t()*sign(error_f - projection_f * semantic_f)) * sign(head_sem_f + tail_sem_f));
 
 		if (norm_L2(head) > 1.0)
 			head = normalise(head);
@@ -547,7 +558,9 @@ public:
 	virtual void train(bool last_time = false) override
 	{
 		TransE::train(last_time);
-		train_topic();
+
+		if (epos % 10 == 0)
+			train_topic();
 	}
 };
 
