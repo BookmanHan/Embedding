@@ -261,6 +261,8 @@ public:
 					if (data_model.check_data_all.find(t) == data_model.check_data_all.end())
 					{
 						++frmean;
+						if (frmean > hit_rank)
+							break;
 					}
 				}
 			}
