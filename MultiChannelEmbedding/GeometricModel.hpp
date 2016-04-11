@@ -1086,6 +1086,76 @@ public:
 	}
 }; 
 
+class TransE_SW
+	:public TransE
+{
+protected:
+	const double wake_factor;
+
+public:
+	TransE_SW(const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double wake_factor)
+		:wake_factor(wake_factor), 
+		TransE(dataset, task_type, logging_base_path, dim, alpha, training_threshold)
+	{
+		logging.record() << "\t[Name]\tTransE SleepWake";
+		logging.record() << "\t[Wake Factor]\t" << wake_factor;
+	}
+
+	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+
+		pair<pair<int, int>, int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		vec& head_f = embedding_entity[triplet_f.first.first];
+		vec& tail_f = embedding_entity[triplet_f.first.second];
+		vec& relation_f = embedding_relation[triplet_f.second];
+
+		vec grad = head + relation - tail;
+		for_each(grad.begin(), grad.end(), [&](double& elem) {if (abs(elem) < wake_factor) elem = 0; });
+		grad = sign(grad);
+
+		head -= alpha * grad;
+		tail += alpha * grad;
+		relation -= alpha * grad;
+	
+		vec grad_f = head_f + relation_f - tail_f;
+		for_each(grad_f.begin(), grad_f.end(), [&](double& elem) {if (abs(elem) < wake_factor) elem = 0; });
+		grad_f = sign(grad_f);
+
+		head_f += alpha * grad_f;
+		tail_f -= alpha * grad_f;
+		relation_f += alpha * grad_f;
+
+		if (norm_L2(head) > 1.0)
+			head = normalise(head);
+
+		if (norm_L2(tail) > 1.0)
+			tail = normalise(tail);
+
+		if (norm_L2(relation) > 1.0)
+			relation = normalise(relation);
+
+		if (norm_L2(head_f) > 1.0)
+			head_f = normalise(head_f);
+
+		if (norm_L2(tail_f) > 1.0)
+			tail_f = normalise(tail_f);
+	}
+};
+
 class TransG
 	:public Model
 {

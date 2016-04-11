@@ -276,3 +276,146 @@ public:
 			relation_out[triplet.second] = normalise(relation_out[triplet.second]);
 	}
 };
+
+inline
+vec max_filter_prob(vec src, const double filter_factor)
+{
+	for (auto i = src.begin(); i != src.end(); ++i)
+	{
+		if (*i < filter_factor)
+			*i = filter_factor;
+	}
+
+	return src;
+}
+
+inline
+vec min_max_filter_prob(vec src, const double filter_factor_small, const double filter_factor_big)
+{
+	for (auto i = src.begin(); i != src.end(); ++i)
+	{
+		if (*i > filter_factor_big)
+			*i = filter_factor_big;
+		else if (*i < filter_factor_small)
+			*i = filter_factor_small;
+	}
+
+	return src;
+}
+
+inline
+vec min_filter_prob(vec src, const double filter_factor)
+{
+	for (auto i = src.begin(); i != src.end(); ++i)
+	{
+		if (*i > filter_factor)
+			*i = filter_factor;
+	}
+
+	return src;
+}
+
+class TopicE
+	:public Model
+{
+protected:
+	vector<vec>	embedding_entity;
+	vector<vec> embedding_relation;
+	vector<vec> embedding_topic;
+
+public:
+	const int		dim;
+	const double	alpha;
+	const double	training_threshold;
+	const double	smoothing;
+	const double	con;
+
+public:
+	TopicE(const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double smoothing_factor,
+		double con)
+		:Model(dataset, task_type, logging_base_path),
+		dim(dim), alpha(alpha), training_threshold(training_threshold),
+		smoothing(smoothing_factor / dim), con(con)
+	{
+		logging.record() << "\t[Name]\tTopicE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Learning Rate]\t" << alpha;
+		logging.record() << "\t[Training Threshold]\t" << training_threshold;
+		logging.record() << "\t[Smoothing Share]\t" << smoothing_factor;
+
+		embedding_entity.resize(count_entity());
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim)); });
+
+		embedding_relation.resize(count_relation());
+		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim)); });
+
+		embedding_topic.resize(count_entity());
+		for_each(embedding_topic.begin(), embedding_topic.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim)); });
+	}
+
+public:
+	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet) override
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& prob = embedding_topic[triplet.first.second];
+
+		double frac = sum(head % relation % prob) + con;
+		double part = sum(head % relation % tail) + con;
+
+		return frac / part;
+	}
+
+	void train_derv(const pair<pair<int, int>, int>& triplet, bool be_true)
+	{
+		vec& head = embedding_entity[triplet.first.first];
+		vec& tail = embedding_entity[triplet.first.second];
+		vec& relation = embedding_relation[triplet.second];
+		vec& prob = embedding_topic[triplet.first.second];
+
+		if (be_true)
+		{
+			double frac = sum(head % relation % prob) + con;
+			double part = sum(head % relation % tail) + con;
+
+			head += alpha * (relation % prob / frac - relation % tail / part);
+			relation += alpha * (head % prob / frac - head % tail / part);
+			tail -= alpha * head % relation / part;
+			prob += alpha * head % relation / frac;
+		}
+		else
+		{
+			double frac = sum(head % relation % prob) + con;
+			double part = sum(head % relation % tail) + con;
+
+			head -= alpha * (relation % prob / frac - relation % tail / part);
+			relation -= alpha * (head % prob / frac - head % tail / part);
+			tail += alpha * head % relation / part;
+			prob -= alpha * head % relation / frac;
+		}
+
+		head = normalise(max_filter_prob(head, smoothing));
+		tail = normalise(max_filter_prob(tail, smoothing));
+		relation = normalise(max_filter_prob(relation, smoothing));
+		prob = normalise(max_filter_prob(prob, smoothing));
+	}
+
+	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
+	{
+		pair<pair<int, int>, int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
+			return;
+
+		train_derv(triplet, true);
+		train_derv(triplet_f, false);
+	}
+};

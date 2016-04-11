@@ -1,8 +1,11 @@
 #include "Import.hpp"
 #include "DetailedConfig.hpp"
-#include "GeometricModel.hpp"
-#include "Task.hpp"
+#include "LatentModel.hpp"
 #include <omp.h>
+
+//	TODO:
+//	New Embedding Framework
+//	... It invokes an emergency.
 
 int main(int argc, char* argv[])
 {
@@ -10,16 +13,9 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(6);
 
 	Model* model = nullptr;
-	model = new SemanticModel(FB15K, LinkPredictionTail, report_path,
-		semantic_vfile_FB15K, 100, 0.001, 1.8, -0.2);
+	model = new TopicE(WN11, TripletClassification, report_path, 100, 0.01, 3.0, 0.5, 1.0);
 	model->run(500);
-	model->test();
-	model->run(500);
-	model->test();
-	model->run(4000);
-	model->test();
-	model->run(4500);
-	model->test();
+	model->test_link_prediction();
 	delete model;
 
 	return 0;

@@ -221,8 +221,9 @@ public:
 	{
 		ifstream fin(filename, ios::binary);
 
-		storage_vmat<double>::load(embedding_entity, fin);
-		storage_vmat<double>::load(embedding_relation, fin);
+		vector<vec> ll;
+		storage_vmat<double>::load(ll, fin);
+		storage_vmat<double>::load(ll, fin);
 		storage_vmat<double>::load(v_semantics, fin);
 		fin.close();
 	}
