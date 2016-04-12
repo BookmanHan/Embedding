@@ -278,37 +278,11 @@ public:
 };
 
 inline
-vec max_filter_prob(vec src, const double filter_factor)
+vec& max_filter_prob(vec& src, const double filter_factor)
 {
 	for (auto i = src.begin(); i != src.end(); ++i)
 	{
 		if (*i < filter_factor)
-			*i = filter_factor;
-	}
-
-	return src;
-}
-
-inline
-vec min_max_filter_prob(vec src, const double filter_factor_small, const double filter_factor_big)
-{
-	for (auto i = src.begin(); i != src.end(); ++i)
-	{
-		if (*i > filter_factor_big)
-			*i = filter_factor_big;
-		else if (*i < filter_factor_small)
-			*i = filter_factor_small;
-	}
-
-	return src;
-}
-
-inline
-vec min_filter_prob(vec src, const double filter_factor)
-{
-	for (auto i = src.begin(); i != src.end(); ++i)
-	{
-		if (*i > filter_factor)
 			*i = filter_factor;
 	}
 
@@ -321,7 +295,12 @@ class TopicE
 protected:
 	vector<vec>	embedding_entity;
 	vector<vec> embedding_relation;
-	vector<vec> embedding_topic;
+	vec			embedding_topic;
+
+protected:
+	vector<vec>	accprob_entity;
+	vector<vec> accprob_relation;
+	vec			accprob_topic;
 
 public:
 	const int		dim;
@@ -350,13 +329,12 @@ public:
 		logging.record() << "\t[Smoothing Share]\t" << smoothing_factor;
 
 		embedding_entity.resize(count_entity());
-		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim)); });
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim), 1); });
 
 		embedding_relation.resize(count_relation());
-		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim)); });
+		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim), 1); });
 
-		embedding_topic.resize(count_entity());
-		for_each(embedding_topic.begin(), embedding_topic.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim)); });
+		embedding_topic = normalise(smoothing + randu(dim), 1);
 	}
 
 public:
@@ -365,57 +343,77 @@ public:
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
-		vec& prob = embedding_topic[triplet.first.second];
+		vec& prob = embedding_topic;
 
-		double frac = sum(head % relation % prob) + con;
-		double part = sum(head % relation % tail) + con;
+		double frac = sum(head % relation % tail / prob);
+		double part = sum(head % relation);
 
 		return frac / part;
 	}
 
-	void train_derv(const pair<pair<int, int>, int>& triplet, bool be_true)
+	void train_derv(const pair<pair<int, int>, int>& triplet, const double local_alpha)
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
 		vec& relation = embedding_relation[triplet.second];
-		vec& prob = embedding_topic[triplet.first.second];
+		vec& prob = embedding_topic;
 
-		if (be_true)
-		{
-			double frac = sum(head % relation % prob) + con;
-			double part = sum(head % relation % tail) + con;
+		vec& ap_head = accprob_entity[triplet.first.first];
+		vec& ap_tail = accprob_entity[triplet.first.second];
+		vec& ap_relation = accprob_relation[triplet.second];
+		vec& ap_prob = accprob_topic;
 
-			head += alpha * (relation % prob / frac - relation % tail / part);
-			relation += alpha * (head % prob / frac - head % tail / part);
-			tail -= alpha * head % relation / part;
-			prob += alpha * head % relation / frac;
-		}
-		else
-		{
-			double frac = sum(head % relation % prob) + con;
-			double part = sum(head % relation % tail) + con;
-
-			head -= alpha * (relation % prob / frac - relation % tail / part);
-			relation -= alpha * (head % prob / frac - head % tail / part);
-			tail += alpha * head % relation / part;
-			prob -= alpha * head % relation / frac;
-		}
-
-		head = normalise(max_filter_prob(head, smoothing));
-		tail = normalise(max_filter_prob(tail, smoothing));
-		relation = normalise(max_filter_prob(relation, smoothing));
-		prob = normalise(max_filter_prob(prob, smoothing));
+		vec curprob_topic = normalise(tail / prob, 1);
+		ap_head += curprob_topic;
+		ap_tail += curprob_topic;
+		ap_relation += curprob_topic;
+		ap_prob += curprob_topic;
 	}
 
 	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
 	{
-		pair<pair<int, int>, int> triplet_f;
-		data_model.sample_false_triplet(triplet, triplet_f);
+		train_derv(triplet, 0);
 
-		if (prob_triplets(triplet) - prob_triplets(triplet_f) > training_threshold)
-			return;
+		//pair<pair<int, int>, int> triplet_f;
+		//data_model.sample_false_triplet(triplet, triplet_f);
 
-		train_derv(triplet, true);
-		train_derv(triplet_f, false);
+		//if (prob_triplets(triplet) / prob_triplets(triplet_f) > training_threshold)
+		//	return;
+
+		//train_derv(triplet,	+alpha);
+		//train_derv(triplet_f, -alpha);
+	}
+
+	virtual void train(bool last_time = false) override
+	{
+		accprob_entity.resize(count_entity());
+		for_each(accprob_entity.begin(), accprob_entity.end(), [=](vec& elem){elem = zeros(dim); });
+
+		accprob_relation.resize(count_relation());
+		for_each(accprob_relation.begin(), accprob_relation.end(), [=](vec& elem){elem = zeros(dim); });
+
+		accprob_topic = zeros(dim);
+
+		Model::train(last_time);
+
+		auto i_entity_embedding = embedding_entity.begin();
+		auto i_entity_accprob = accprob_entity.begin();
+		while (i_entity_accprob != accprob_entity.end() && i_entity_embedding != embedding_entity.end())
+		{
+			*i_entity_embedding = normalise(*i_entity_accprob, 1) + smoothing;
+			++i_entity_accprob;
+			++i_entity_embedding;
+		}
+
+		auto i_relation_embedding = embedding_relation.begin();
+		auto i_relation_accprob = accprob_relation.begin();
+		while (i_relation_accprob != accprob_relation.end() && i_relation_embedding != embedding_relation.end())
+		{
+			*i_relation_embedding = normalise(*i_relation_accprob, 1) + smoothing;
+			++i_relation_accprob;
+			++i_relation_embedding;
+		}
+		
+		embedding_topic = normalise(accprob_topic, 1) + smoothing;
 	}
 };
