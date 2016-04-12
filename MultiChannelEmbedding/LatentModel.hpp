@@ -304,29 +304,29 @@ protected:
 
 public:
 	const int		dim;
-	const double	alpha;
-	const double	training_threshold;
 	const double	smoothing;
-	const double	con;
+	const double	balance;
+	const double	margin;
+
+public:
+	vec alpha;
 
 public:
 	TopicE(const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path,
 		int dim,
-		double alpha,
-		double training_threshold,
 		double smoothing_factor,
-		double con)
+		double balance,
+		double margin)
 		:Model(dataset, task_type, logging_base_path),
-		dim(dim), alpha(alpha), training_threshold(training_threshold),
-		smoothing(smoothing_factor / dim), con(con)
+		dim(dim), smoothing(smoothing_factor), balance(balance), margin(margin)
 	{
 		logging.record() << "\t[Name]\tTopicE";
 		logging.record() << "\t[Dimension]\t" << dim;
-		logging.record() << "\t[Learning Rate]\t" << alpha;
-		logging.record() << "\t[Training Threshold]\t" << training_threshold;
 		logging.record() << "\t[Smoothing Share]\t" << smoothing_factor;
+		logging.record() << "\t[Balance]\t" << balance;
+		logging.record() << "\t[Margin]\t" << margin;
 
 		embedding_entity.resize(count_entity());
 		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim), 1); });
@@ -335,6 +335,35 @@ public:
 		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim), 1); });
 
 		embedding_topic = normalise(smoothing + randu(dim), 1);
+
+		alpha = ones(count_entity());
+	}
+
+	TopicE(const DataModel* data_model,
+		const TaskType& task_type,
+		ModelLogging* logging_p,
+		int dim,
+		double smoothing_factor,
+		double balance,
+		double margin)
+		:Model(data_model, task_type, logging_p),
+		dim(dim), smoothing(smoothing_factor), balance(balance), margin(margin)
+	{
+		logging.record() << "\t[Name]\tTopicE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Smoothing Share]\t" << smoothing_factor;
+		logging.record() << "\t[Balance]\t" << balance;
+		logging.record() << "\t[Margin]\t" << margin;
+
+		embedding_entity.resize(count_entity());
+		for_each(embedding_entity.begin(), embedding_entity.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim), 1); });
+
+		embedding_relation.resize(count_relation());
+		for_each(embedding_relation.begin(), embedding_relation.end(), [=](vec& elem){elem = normalise(smoothing + randu(dim), 1); });
+
+		embedding_topic = normalise(smoothing + randu(dim), 1);
+		
+		alpha = ones(count_entity());
 	}
 
 public:
@@ -351,7 +380,7 @@ public:
 		return frac / part;
 	}
 
-	void train_derv(const pair<pair<int, int>, int>& triplet, const double local_alpha)
+	void train_derv(const pair<pair<int, int>, int>& triplet, const double alpha)
 	{
 		vec& head = embedding_entity[triplet.first.first];
 		vec& tail = embedding_entity[triplet.first.second];
@@ -363,25 +392,29 @@ public:
 		vec& ap_relation = accprob_relation[triplet.second];
 		vec& ap_prob = accprob_topic;
 
-		vec curprob_topic = normalise(tail / prob, 1);
-		ap_head += curprob_topic;
-		ap_tail += curprob_topic;
-		ap_relation += curprob_topic;
-		ap_prob += curprob_topic;
+		//vec curprob_topic = normalise(tail / prob, 1);
+		//vec curprob_topic = normalise(head / prob, 1);
+		//vec curprob_topic = normalise(tail / prob, 1) + normalise(head / prob, 1);
+		vec curprob_topic = normalise(head % tail % relation / prob);
+
+		ap_head += alpha * curprob_topic;
+		ap_tail += alpha * curprob_topic;
+		ap_relation += alpha * curprob_topic;
+		ap_prob += alpha * curprob_topic;
+
 	}
 
 	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
 	{
-		train_derv(triplet, 0);
+		pair<pair<int, int>, int> triplet_f;
+		data_model.sample_false_triplet(triplet, triplet_f);
+		
+		train_derv(triplet, alpha[triplet.first.second]);
 
-		//pair<pair<int, int>, int> triplet_f;
-		//data_model.sample_false_triplet(triplet, triplet_f);
+		if (prob_triplets(triplet)/prob_triplets(triplet_f) > margin)
+			return;
 
-		//if (prob_triplets(triplet) / prob_triplets(triplet_f) > training_threshold)
-		//	return;
-
-		//train_derv(triplet,	+alpha);
-		//train_derv(triplet_f, -alpha);
+		train_derv(triplet_f, -balance * alpha[triplet.first.second]);
 	}
 
 	virtual void train(bool last_time = false) override
@@ -396,11 +429,13 @@ public:
 
 		Model::train(last_time);
 
+		embedding_topic = normalise(accprob_topic - smoothing, 1);
+
 		auto i_entity_embedding = embedding_entity.begin();
 		auto i_entity_accprob = accprob_entity.begin();
 		while (i_entity_accprob != accprob_entity.end() && i_entity_embedding != embedding_entity.end())
 		{
-			*i_entity_embedding = normalise(*i_entity_accprob, 1) + smoothing;
+			*i_entity_embedding = normalise(*i_entity_accprob + smoothing, 1);
 			++i_entity_accprob;
 			++i_entity_embedding;
 		}
@@ -409,11 +444,118 @@ public:
 		auto i_relation_accprob = accprob_relation.begin();
 		while (i_relation_accprob != accprob_relation.end() && i_relation_embedding != embedding_relation.end())
 		{
-			*i_relation_embedding = normalise(*i_relation_accprob, 1) + smoothing;
+			*i_relation_embedding = normalise(*i_relation_accprob + smoothing, 1);
 			++i_relation_accprob;
 			++i_relation_embedding;
 		}
+	}
+};
+
+class MTopicE
+	:public Model
+{
+public:
+	vector<TopicE*>	topic_factor;
+	vector<vec>		embedding_factor;
+	vec				prob_factor;
+
+public:
+	vector<vec>		accprob_factor;
+	vec				accprob_prob_factor;
+
+public:
+	const int		dim;
+	const double	smoothing;
+	const double	balance;
+	const double	margin;
+	const int		n_factor;
+
+public:
+	MTopicE(const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		int dim,
+		double smoothing_factor,
+		double balance,
+		double margin,
+		int n_factor)
+		:Model(dataset, task_type, logging_base_path),
+		dim(dim), smoothing(smoothing_factor), balance(balance), margin(margin), n_factor(n_factor)
+	{
+		logging.record() << "\t[Name]\tMTopicE";
+		logging.record() << "\t[Dimension]\t" << dim;
+		logging.record() << "\t[Smoothing Share]\t" << smoothing_factor;
+		logging.record() << "\t[Balance]\t" << balance;
+		logging.record() << "\t[Margin]\t" << margin;
+		logging.record() << "\t[Factor]\t" << n_factor;
+
+		for (auto i = 0; i < n_factor; ++i)
+		{
+			topic_factor.push_back(new TopicE(&data_model, task_type, &logging, 
+				dim, smoothing_factor, balance, margin));
+		}
+
+		embedding_factor.resize(count_entity());
+		for_each(embedding_factor.begin(), embedding_factor.end(), [=](vec& elem){elem = normalise(smoothing + ones(n_factor), 1); });
+
+		prob_factor = normalise(ones(n_factor), 1);
+	}
+
+public:
+	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet) override
+	{
+		vec acc_factor(n_factor);
+		auto i_acc_factor = acc_factor.begin();
+		for (auto i = topic_factor.begin(); i != topic_factor.end(); ++i)
+		{
+			*i_acc_factor = ((*i)->prob_triplets(triplet));
+			++i_acc_factor;
+		}
+
+		return sum(acc_factor % embedding_factor[triplet.first.second] / prob_factor);
+	}
+
+	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
+	{
+		vec acc_factor(n_factor);
+		auto i_acc_factor = acc_factor.begin();
+		for (auto i = topic_factor.begin(); i != topic_factor.end(); ++i)
+		{
+			*i_acc_factor = ((*i)->prob_triplets(triplet));
+			++i_acc_factor;
+		}
+
+		accprob_factor[triplet.first.second] += acc_factor;
+		accprob_prob_factor += acc_factor;
+	}
+
+	virtual void train(bool last_time = false) override
+	{
+		for (auto i = 0; i != n_factor; ++i)
+		{
+			for (auto j = 0; j < count_entity(); ++j)
+			{
+				topic_factor[i]->alpha[j] = embedding_factor[j][i] / prob_factor[i];
+			}
+			topic_factor[i]->train(last_time);
+		}
+
+		accprob_factor.resize(count_entity());
+		for_each(accprob_factor.begin(), accprob_factor.end(), [=](vec& elem){elem = zeros(n_factor); });
+
+		accprob_prob_factor = zeros(n_factor);
+
+		Model::train(last_time);
+
+		prob_factor = normalise(accprob_prob_factor + smoothing, 1);
 		
-		embedding_topic = normalise(accprob_topic, 1) + smoothing;
+		auto i_factor_embedding = embedding_factor.begin();
+		auto i_factor_accprob = accprob_factor.begin();
+		while (i_factor_accprob != accprob_factor.end() && i_factor_embedding != embedding_factor.end())
+		{
+			*i_factor_embedding = normalise(*i_factor_accprob + smoothing, 1);
+			++i_factor_accprob;
+			++i_factor_embedding;
+		}
 	}
 };

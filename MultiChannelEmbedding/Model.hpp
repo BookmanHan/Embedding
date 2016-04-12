@@ -9,12 +9,13 @@ using namespace arma;
 
 class Model
 {
-protected:
-	const DataModel		data_model;
+public:
+	const DataModel&	data_model;
 	const TaskType		task_type;
+	const bool			be_deleted_data_model;
 
 public:
-	ModelLogging		logging;
+	ModelLogging&		logging;
 
 public:
 	int	epos;
@@ -23,7 +24,9 @@ public:
 	Model(const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path)
-		:data_model(dataset), task_type(task_type), logging(logging_base_path)
+		:data_model(*(new DataModel(dataset))), task_type(task_type), 
+		logging(*(new ModelLogging(logging_base_path))),
+		be_deleted_data_model(true)
 	{
 		epos = 0;
 		best_triplet_result = 0;
@@ -37,7 +40,9 @@ public:
 		const string& file_zero_shot,
 		const TaskType& task_type,
 		const string& logging_base_path)
-		:data_model(dataset, file_zero_shot), task_type(task_type), logging(logging_base_path)
+		:data_model(*(new DataModel(dataset))), task_type(task_type),
+		logging(*(new ModelLogging(logging_base_path))),
+		be_deleted_data_model(true)
 	{
 		epos = 0;
 		best_triplet_result = 0;
@@ -45,6 +50,16 @@ public:
 
 		logging.record() << "\t[Dataset]\t" << dataset.name;
 		logging.record() << TaskTypeName(task_type);
+	}
+
+	Model(const DataModel* data_model,
+		const TaskType& task_type,
+		ModelLogging* logging)
+		:data_model(*data_model), logging(*logging), task_type(task_type),
+		be_deleted_data_model(false)
+	{
+		epos = 0;
+		best_triplet_result = 0;
 	}
 
 public:
@@ -479,6 +494,11 @@ public:
 	~Model()
 	{
 		logging.record();
+		if (be_deleted_data_model)
+		{
+			delete &data_model;
+			delete &logging;
+		}
 	}
 
 public:
