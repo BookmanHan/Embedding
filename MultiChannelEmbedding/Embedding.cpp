@@ -11,7 +11,8 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(6);
 
 	Model* model = nullptr;
-	model = new MFactorE(FB15K, TripletClassification, report_path, 20, 0.01, 0.05, 5);
+	
+	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 100, 0.005, 0.1, 0.5, 2);
 	model->run(1000);
 	model->test();
 	delete model;
