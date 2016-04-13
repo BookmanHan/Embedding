@@ -11,8 +11,8 @@ int main(int argc, char* argv[])
 	//omp_set_num_threads(6);
 
 	Model* model = nullptr;
-	model = new MTopicE(WN11, TripletClassification, report_path, 5, 1e-6, 0.1, 1.25, 100);
-	model->run(500);
+	model = new MFactorE(FB15K, TripletClassification, report_path, 20, 0.01, 0.05, 5);
+	model->run(1000);
 	model->test();
 	delete model;
 
