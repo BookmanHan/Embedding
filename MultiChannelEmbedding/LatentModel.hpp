@@ -379,8 +379,8 @@ public:
 		vec head_feature = head % relation_head;
 		vec tail_feature = tail % relation_tail;
 
-		return sum(head_feature) * sum(tail_feature)* 
-			exp(-sum(abs(head_feature - tail_feature)) / sigma);
+		return log(sum(head_feature % tail_feature)) * sigma
+			-sum(abs(head_feature - tail_feature));
 	}
 
 	virtual void train_derv(const pair<pair<int, int>, int>& triplet, const double alpha) override
@@ -392,19 +392,17 @@ public:
 
 		vec head_feature = head % relation_head;
 		vec tail_feature = tail % relation_tail;
-		vec grad = - sign(head_feature - tail_feature) / sigma;
+		vec feature = head_feature % tail_feature;
+		vec grad = sign(head_feature - tail_feature);
 
-		head += alpha * grad % relation_head
-			+alpha * relation_head / sum(head_feature);
-		relation_head += alpha * grad % head
-			+ alpha * head / sum(head_feature);
-		tail += -alpha * grad % relation_tail
-			+ alpha * tail_feature / tail / sum(tail_feature);
-		relation_tail += -alpha * grad % tail
-			+ alpha * tail_feature / relation_tail / sum(tail_feature);
-
-		//relation_head += alpha * pow(alpha, 2) * sign(relation_head - relation_tail);
-		//relation_tail -= alpha * pow(alpha, 2) * sign(relation_head - relation_tail);
+		head += -alpha * grad % relation_head
+			+ alpha * relation_head % tail_feature / sum(feature) * sigma;
+		relation_head += -alpha * grad % head
+			+alpha * head % tail_feature / sum(feature) * sigma;
+		tail += alpha * grad % relation_tail
+			+alpha * relation_tail % head_feature / sum(feature) * sigma;
+		relation_tail += alpha * grad % tail
+			+alpha * tail % head_feature / sum(feature) * sigma;
 
 		head = normalise(max(head, ones(dim) / pow(dim, 5)), 2);
 		tail = normalise(max(tail, ones(dim) / pow(dim, 5)), 2);
@@ -418,7 +416,7 @@ public:
 		pair<pair<int, int>, int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
-		if (prob_triplets(triplet) / prob_triplets(triplet_f) > exp(margin/sigma))
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > margin)
 			return;
 
 		train_derv(triplet, alpha);
@@ -447,11 +445,11 @@ public:
 
 		embedding_relation_head.resize(relation_count);
 		for_each(embedding_relation_head.begin(), embedding_relation_head.end(),
-			[=](vec& elem){elem = normalise(ones(dim), 2); });
+			[=](vec& elem){elem = normalise(randu(dim), 2); });
 
 		embedding_relation_tail.resize(relation_count);
 		for_each(embedding_relation_tail.begin(), embedding_relation_tail.end(),
-			[=](vec& elem){elem = normalise(ones(dim), 2); });
+			[=](vec& elem){elem = normalise(randu(dim), 2); });
 	}
 
 	double prob(const pair<pair<int, int>, int>& triplet)
@@ -464,8 +462,8 @@ public:
 		vec head_feature = head % relation_head;
 		vec tail_feature = tail % relation_tail;
 
-		return sum(head_feature) * sum(tail_feature)
-			* exp(-sum(abs(head_feature - tail_feature))/sigma);
+		return log(sum(head_feature % tail_feature)) * sigma
+			- sum(abs(head_feature - tail_feature));
 	}
 
 	void train(const pair<pair<int, int>, int>& triplet, const double alpha)
@@ -477,19 +475,17 @@ public:
 
 		vec head_feature = head % relation_head;
 		vec tail_feature = tail % relation_tail;
-		vec grad = -sign(head_feature - tail_feature) / sigma;
+		vec feature = head_feature % tail_feature;
+		vec grad = sign(head_feature - tail_feature);
 
-		head += alpha * grad % relation_head
-			+ alpha * relation_head / sum(head_feature);
-		relation_head += alpha * grad % head
-			+ alpha * head / sum(head_feature);
-		tail += -alpha * grad % relation_tail
-			+ alpha * tail_feature / tail / sum(tail_feature);
-		relation_tail += -alpha * grad % tail
-			+ alpha * tail_feature / relation_tail / sum(tail_feature);
-
-		//relation_head += alpha * pow(alpha, 2) * sign(relation_head - relation_tail);
-		//relation_tail -= alpha * pow(alpha, 2) * sign(relation_head - relation_tail);
+		head += -alpha * grad % relation_head
+			+ alpha * relation_head % tail_feature / sum(feature) * sigma;
+		relation_head += -alpha * grad % head
+			+ alpha * head % tail_feature / sum(feature) * sigma;
+		tail += alpha * grad % relation_tail
+			+ alpha * relation_tail % head_feature / sum(feature) * sigma;
+		relation_tail += alpha * grad % tail
+			+ alpha * tail % head_feature / sum(feature) * sigma;
 
 		head = normalise(max(head, ones(dim) / pow(dim, 5)), 2);
 		tail = normalise(max(tail, ones(dim) / pow(dim, 5)), 2);
@@ -528,16 +524,16 @@ public:
 		:Model(dataset, task_type, logging_base_path),
 		dim(dim), alpha(alpha), margin(training_threshold), n_factor(n_factor), sigma(sigma)
 	{
-		logging.record() << "\t[Name]\tFactorE";
+		logging.record() << "\t[Name]\tMultiple.FactorE";
 		logging.record() << "\t[Dimension]\t" << dim;
 		logging.record() << "\t[Learning Rate]\t" << alpha;
 		logging.record() << "\t[Training Threshold]\t" << training_threshold;
 		logging.record() << "\t[Factor Number]\t" << n_factor;
 
-		relation_space.resize(count_entity());
+		relation_space.resize(count_relation());
 		for (vec& elem : relation_space)
 		{
-			elem = normalise(randu(n_factor));
+			elem = randu(n_factor);
 		}
 
 		for (auto i = 0; i < n_factor; ++i)
@@ -560,7 +556,7 @@ public:
 
 	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet) override
 	{
-		return prod(get_error_vec(triplet));
+		return sum(get_error_vec(triplet) % relation_space[triplet.second]);
 	}
 
 	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
@@ -568,23 +564,36 @@ public:
 		pair<pair<int, int>, int> triplet_f;
 		data_model.sample_false_triplet(triplet, triplet_f);
 
-		if (prob_triplets(triplet) / prob_triplets(triplet_f) > exp(n_factor * margin/sigma))
+		if (prob_triplets(triplet) - prob_triplets(triplet_f) > margin)
 			return;
 
-		vec ef = get_error_vec(triplet);
+		vec err = get_error_vec(triplet);
+		vec err_f = get_error_vec(triplet);
 
-		auto i = relation_space[triplet.second].begin();
 		for (auto i=0; i<n_factor; ++i)
 		{
-			factors[i]->train(triplet, alpha);
-			factors[i]->train(triplet_f, -alpha);
-
-			++i;
+			factors[i]->train(triplet, n_factor * alpha * relation_space[triplet.second][i]);
+			factors[i]->train(triplet_f, - n_factor * alpha * relation_space[triplet.second][i]);
 		}
+
+		acc_space[triplet.second] += err;
+		//acc_space[triplet_f.second] -= err_f;
 	}
 
 	virtual void train(bool last_time = false) override
 	{
+		acc_space.resize(count_relation());
+		for (vec & elem : acc_space)
+		{
+			elem = zeros(n_factor);
+		}
+
 		Model::train(last_time);
+
+		for (auto i = 0; i < count_relation(); ++i)
+		{
+			relation_space[i] = 
+				normalise(max(-acc_space[i], ones(n_factor) / dim), 1);
+		}
 	}
 };
