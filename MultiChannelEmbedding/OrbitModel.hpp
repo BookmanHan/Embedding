@@ -169,6 +169,21 @@ public:
 		embedding_entity[i] -= factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[j];
 		embedding_entity[j] -= factor * sign(as_scalar(embedding_entity[i].t()*embedding_entity[j])) * embedding_entity[i];
 	}
+
+	virtual double prob_triplets(const pair<pair<int, int>, int>& triplet) override
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	virtual vec entity_representation(int entity_id) const override
+	{
+		return embedding_entity[entity_id];
+	}
 };
 
 class OrbitE

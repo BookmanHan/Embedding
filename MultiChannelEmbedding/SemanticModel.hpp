@@ -220,10 +220,8 @@ public:
 	virtual void load(const string& filename) override
 	{
 		ifstream fin(filename, ios::binary);
-
-		vector<vec> ll;
-		storage_vmat<double>::load(ll, fin);
-		storage_vmat<double>::load(ll, fin);
+		storage_vmat<double>::load(embedding_entity, fin);
+		storage_vmat<double>::load(embedding_relation, fin);
 		storage_vmat<double>::load(v_semantics, fin);
 		fin.close();
 	}

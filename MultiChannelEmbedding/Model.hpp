@@ -24,7 +24,7 @@ public:
 	Model(const Dataset& dataset,
 		const TaskType& task_type,
 		const string& logging_base_path)
-		:data_model(*(new DataModel(dataset))), task_type(task_type), 
+		:data_model(*(new DataModel(dataset))), task_type(task_type),
 		logging(*(new ModelLogging(logging_base_path))),
 		be_deleted_data_model(true)
 	{
@@ -216,6 +216,8 @@ public:
 		double hits = 0;
 		double fmean = 0;
 		double fhits = 0;
+		double rmrr = 0;
+		double fmrr = 0;
 		double total = data_model.data_test_true.size();
 
 		double arr_mean[20] = { 0 };
@@ -289,6 +291,9 @@ public:
 
 				mean += rmean;
 				fmean += frmean;
+				rmrr += 1.0 / (rmean + 1);
+				fmrr += 1.0 / (frmean + 1);
+
 				if (rmean < hit_rank)
 					++hits;
 				if (frmean < hit_rank)
@@ -310,12 +315,17 @@ public:
 		best_link_fhitatten = max(best_link_fhitatten, fhits / total);
 
 		std::cout << "Raw.BestMEANS = " << best_link_mean << endl;
+		std::cout << "Raw.BestMRR = " << rmrr / total << endl;
 		std::cout << "Raw.BestHITS = " << best_link_hitatten << endl;
 		logging.record() << "Raw.BestMEANS = " << best_link_mean;
+		logging.record() << "Raw.BestMRR = " << rmrr / total;
 		logging.record() << "Raw.BestHITS = " << best_link_hitatten;
+
 		std::cout << "Filter.BestMEANS = " << best_link_fmean << endl;
+		std::cout << "Filter.BestMRR= " << fmrr / total << endl;
 		std::cout << "Filter.BestHITS = " << best_link_fhitatten << endl;
 		logging.record() << "Filter.BestMEANS = " << best_link_fmean;
+		logging.record() << "Filter.BestMRR= " << fmrr / total;
 		logging.record() << "Filter.BestHITS = " << best_link_fhitatten;
 
 		std::cout.flush();
@@ -524,6 +534,16 @@ public:
 	}
 
 	virtual void load(const string& filename)
+	{
+		cout << "BAD";
+	}
+
+	virtual vec entity_representation(int entity_id) const
+	{
+		cout << "BAD";
+	}
+
+	virtual vec relation_representation(int relation_id) const
 	{
 		cout << "BAD";
 	}

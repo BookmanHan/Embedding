@@ -18,7 +18,7 @@ protected:
 	map<string, int>			topic_name_to_id;
 	set<int>					filtered_topic;
 	vector<int>					topic_count;
-	TransE *					model;
+	Model *					model;
 	vector<vec>					input_sample;
 
 protected:
@@ -26,8 +26,8 @@ protected:
 
 public:
 	TopicRegressionTask(
-		TransE* model,
-		const string& type_file,
+		Model* model,
+		const string type_file,
 		const int evaluted_type = 50)
 		:model(model), lrc(evaluted_type)
 	{
@@ -35,6 +35,7 @@ public:
 		model->logging.record() << "\t[Evaluated Type Number]\t" << evaluted_type;
 
 		int dim_init = model->entity_representation(1).n_rows;
+
 		for (auto i = lrc.begin(); i != lrc.end(); ++i)
 		{
 			*i = randn(dim_init);
@@ -203,7 +204,7 @@ class TopicRegressionTaskZeroShot
 public:
 	TopicRegressionTaskZeroShot(
 		TransE* model,
-		const string& type_file,
+		const string type_file,
 		const int evaluted_type = 50)
 		:TopicRegressionTask(model, type_file, evaluted_type)
 	{

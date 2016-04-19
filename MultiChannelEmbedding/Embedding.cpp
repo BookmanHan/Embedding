@@ -1,7 +1,8 @@
 #include "Import.hpp"
 #include "DetailedConfig.hpp"
-#include "GeometricModel.hpp"
 #include "LatentModel.hpp"
+#include "OrbitModel.hpp"
+#include "Task.hpp"
 #include <omp.h>
 
 // 400s for each experiment.
@@ -12,74 +13,23 @@ int main(int argc, char* argv[])
 
 	Model* model = nullptr;
 
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.1, 0.03);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.1, 0.05);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.1, 0.07);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.1, 0.1);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.1, 0.2);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.1, 0.5);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.05, 0.02);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.2, 0.02);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.01, 0.3, 0.02);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.001, 0.1, 0.02);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.003, 0.1, 0.02);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new FactorE(FB15K, LinkPredictionTail, report_path, 100, 0.005, 0.1, 0.02);
-	model->run(1500);
-	model->test();
-	delete model;
-
-	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 50, 0.01, 0.1, 0.01, 2);
-	model->run(500);
-	model->test();
-	delete model;
-
-	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 10, 0.01, 0.1, 0.01, 10);
-	model->run(500);
-	model->test();
+	model = new MFactorSemantics
+		(FB15K, General, report_path, semantic_tfile_FB15K, 10, 0.01, 0.1, 0.04, 100);
+	model->load("D:\\Temp\\MFactorE.10-0.01-0.1-0.04-100.model");
+	((MFactorSemantics*)model)->analyze();
+	
+	MFactorSemantics& m = *((MFactorSemantics*)model);
+	while (true)
+	{
+		string str_in;
+		cout << "Ask:";
+		getline(cin, str_in);
+		vector<int> re = m.infer_entity(str_in, 10);
+		for (auto & elem : re)
+		{
+			cout << m.tells[elem].substr(0, 120) <<endl;
+		}
+	}
 	delete model;
 
 	return 0;

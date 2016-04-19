@@ -3,6 +3,11 @@
 #include "ModelConfig.hpp"
 #include "DataModel.hpp"
 #include "Model.hpp"
+#include "Storage.hpp"
+#include <boost/format.hpp>  
+#include <boost/tokenizer.hpp>  
+#include <boost/algorithm/string.hpp>  
+#include <cctype>
 
 class LatentModel
 	:public Model
@@ -345,6 +350,31 @@ public:
 	}
 
 	virtual void train_derv(const pair<pair<int, int>, int>& triplet, const double alpha) = 0;
+
+public:
+	virtual void save(const string& filename) override
+	{
+		ofstream fout(filename.c_str(), ios::binary);
+		storage_vmat<double>::save(embedding_entity, fout);
+		storage_vmat<double>::save(embedding_relation_head, fout);
+		storage_vmat<double>::save(embedding_relation_tail, fout);
+		fout.close();
+	}
+
+	virtual void load(const string& filename) override
+	{
+		ifstream fin(filename.c_str(), ios::binary);
+		storage_vmat<double>::load(embedding_entity, fin);
+		storage_vmat<double>::load(embedding_relation_head, fin);
+		storage_vmat<double>::load(embedding_relation_tail, fin);
+		fin.close();
+	}
+
+public:
+	virtual vec entity_representation(int entity_id) const
+	{
+		return embedding_entity[entity_id];
+	}
 };
 
 class FactorE
@@ -436,6 +466,16 @@ public:
 	const double	sigma;
 
 public:
+	int factor_index(const int entity_id) const
+	{
+		const vec& entity = embedding_entity[entity_id];
+
+		unsigned int re_index;
+		entity.max(re_index);
+
+		return re_index;
+	}
+
 	SFactorE(int dim, int entity_count, int relation_count, double sigma)
 		:dim(dim), sigma(sigma)
 	{
@@ -492,6 +532,27 @@ public:
 		relation_head = normalise(max(relation_head, ones(dim) / pow(dim, 5)), 2);
 		relation_tail = normalise(max(relation_tail, ones(dim) / pow(dim, 5)), 2);
 	}
+
+public:
+	void save(ofstream & fout)
+	{
+		storage_vmat<double>::save(embedding_entity, fout);
+		storage_vmat<double>::save(embedding_relation_head, fout);
+		storage_vmat<double>::save(embedding_relation_tail, fout);
+	}
+
+	void load(ifstream & fin)
+	{
+		storage_vmat<double>::load(embedding_entity, fin);
+		storage_vmat<double>::load(embedding_relation_head, fin);
+		storage_vmat<double>::load(embedding_relation_tail, fin);
+	}
+
+public:
+	virtual vec entity_representation(int entity_id) const
+	{
+		return embedding_entity[entity_id];
+	}
 };
 
 class MFactorE
@@ -533,7 +594,7 @@ public:
 		relation_space.resize(count_relation());
 		for (vec& elem : relation_space)
 		{
-			elem = randu(n_factor);
+			elem = normalise(ones(n_factor));
 		}
 
 		for (auto i = 0; i < n_factor; ++i)
@@ -542,7 +603,24 @@ public:
 		}
 	}
 
-	vec get_error_vec(const pair<pair<int, int>, int>& triplet)
+public:
+	Col<int> factor_index(const int entity_id) const
+	{
+		Col<int> v_index(n_factor);
+		for (auto i = 0; i < n_factor; ++i)
+		{
+			v_index[i] = factors[i]->factor_index(entity_id);
+		}
+
+		return v_index;
+	}
+
+	int category_index(const int entity_id, const int feature_id) const
+	{
+		return factors[feature_id]->factor_index(entity_id);
+	}
+
+	vec get_error_vec(const pair<pair<int, int>, int>& triplet) const
 	{
 		vec score(n_factor);
 		auto i_score = score.begin();
@@ -559,6 +637,7 @@ public:
 		return sum(get_error_vec(triplet) % relation_space[triplet.second]);
 	}
 
+public:
 	virtual void train_triplet(const pair<pair<int, int>, int>& triplet) override
 	{
 		pair<pair<int, int>, int> triplet_f;
@@ -577,7 +656,6 @@ public:
 		}
 
 		acc_space[triplet.second] += err;
-		//acc_space[triplet_f.second] -= err_f;
 	}
 
 	virtual void train(bool last_time = false) override
@@ -595,5 +673,181 @@ public:
 			relation_space[i] = 
 				normalise(max(-acc_space[i], ones(n_factor) / dim), 1);
 		}
+	}
+
+public:
+	virtual void save(const string& filename) override
+	{
+		ofstream fout(filename.c_str(), ios::binary);
+		storage_vmat<double>::save(relation_space, fout);
+		for (auto i = 0; i < n_factor; ++i)
+		{
+			factors[i]->save(fout);
+		}
+		fout.close();
+	}
+
+	virtual void load(const string& filename) override
+	{
+		ifstream fin(filename.c_str(), ios::binary);
+		storage_vmat<double>::load(relation_space, fin);
+		for (auto i = 0; i < n_factor; ++i)
+		{
+			factors[i]->load(fin);
+		}
+		fin.close();
+	}
+
+public:
+	virtual vec entity_representation(int entity_id) const
+	{
+		vec rep_vec;
+		for (auto i = 0; i < n_factor; ++i)
+		{
+			rep_vec = join_cols(rep_vec, factors[i]->entity_representation(entity_id));
+		}
+	
+		return rep_vec;
+	}
+};
+
+class MFactorSemantics
+	:public MFactorE
+{
+protected:
+	vector<vector<string>>		documents;
+	map<string, vec>			topic_words;
+
+public:
+	vector<string>				tells;
+
+public:
+	MFactorSemantics(
+		const Dataset& dataset,
+		const TaskType& task_type,
+		const string& logging_base_path,
+		const string& semantic_file_raw,
+		int dim,
+		double alpha,
+		double training_threshold,
+		double sigma,
+		int n_factor)
+		:MFactorE(dataset, task_type, logging_base_path, dim, alpha, training_threshold,
+		sigma, n_factor)
+	{
+		documents.resize(count_entity() + 10);
+		tells.resize(count_entity() + 10);
+
+		fstream fin(semantic_file_raw.c_str());
+		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
+		while (!fin.eof())
+		{
+			string strin;
+			getline(fin, strin);
+			transform(strin.begin(), strin.end(), strin.begin(), ::tolower);
+
+			boost::tokenizer<boost::char_separator<char>>	token(strin, sep);
+
+			string entity_name;
+			vector<string>	entity_description;
+			for (auto i = token.begin(); i != token.end(); ++i)
+			{
+				if (i == token.begin())
+				{
+					entity_name = *i;
+				}
+				else
+				{
+					entity_description.push_back(*i);
+					if (topic_words.find(*i) == topic_words.end())
+					{
+						topic_words[*i] = zeros(dim * n_factor);
+					}
+				}
+			}
+
+			documents[data_model.entity_name_to_id.find(entity_name)->second] = entity_description;
+			tells[data_model.entity_name_to_id.find(entity_name)->second] = strin;
+		}
+		fin.close();
+
+		std::cout << "File Loaded." << endl;
+	}
+
+public:
+	void analyze()
+	{
+		ofstream fout("D:\\Temp\\analyse.result");
+
+		for (auto ient = 0; ient < count_entity(); ++ient)
+		{
+			vec rep_ent = entity_representation(ient);
+			for (string& w : documents[ient])
+			{
+				topic_words[w] += rep_ent;
+			}
+		}
+
+		for (auto & elem : topic_words)
+		{
+			for (auto i = 0; i < n_factor; ++i)
+			{
+				double t = 0;
+				for (auto j = 0; j < dim; ++j)
+				{
+					t += elem.second[i*dim + j] * elem.second[i*dim + j];
+				}
+
+				t = sqrt(t);
+				for (auto j = 0; j < dim; ++j)
+				{
+					elem.second[i*dim + j] /= t;
+				}
+			}
+		}
+	}
+
+public:
+	vector<int> infer_entity(string query, int n_item)
+	{
+		transform(query.begin(), query.end(), query.begin(), ::tolower);
+		boost::char_separator<char> sep(" \t \"\',.\\?!#%@");
+		boost::tokenizer<boost::char_separator<char>>	token(query, sep);
+
+		vec rep_query = ones(dim * n_factor);
+		for (auto i = token.begin(); i != token.end(); ++i)
+		{
+			rep_query = rep_query % topic_words[*i];
+		}
+
+		for (auto i = 0; i < n_factor; ++i)
+		{
+			double t = 0;
+			for (auto j = 0; j < dim; ++j)
+			{
+				t += rep_query[i*dim + j] * rep_query[i*dim + j];
+			}
+
+			t = sqrt(t);
+			for (auto j = 0; j < dim; ++j)
+			{
+				rep_query[i*dim + j] /= t;
+			}
+		}
+
+		vector<pair<double, int>>	scores;
+		for (auto i = 0; i < count_entity(); ++i)
+		{
+			scores.push_back(make_pair(dot(rep_query, entity_representation(i)), i));
+		}
+
+		sort(scores.begin(), scores.end(), greater<pair<double, int>>());
+		vector<int> re;
+		for (auto i = 0; i < n_item; ++i)
+		{
+			re.push_back(scores[i].second);
+		}
+
+		return re;
 	}
 };
