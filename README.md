@@ -1,4 +1,17 @@
 # Embedding
+This Project is contributed by Xiao Han in Tsinghua University.
+
+# Datasets
+http://www.ibookman.net
+http://ciia.cs.tsinghua.edu.cn
+
+## Supported Papers
+ManifoldE (IJCAI.2016): https://arxiv.org/pdf/1512.04792.pdf
+TransG (ACL.2016): https://arxiv.org/pdf/1509.05488.pdf
+TransA (submitting to AAAI.2017): https://arxiv.org/pdf/1509.05490.pdf
+SSP (submitting to AAAI.2017): https://arxiv.org/pdf/1604.04835.pdf
+KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
+
 ## Dependency
 -	Armadillo
 	-	Armadillo is a high quality linear algebra library (matrix maths) for the C++ language, aiming towards a good balance between speed and ease of use 
