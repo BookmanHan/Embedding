@@ -2,8 +2,8 @@
 This Project is contributed by Xiao Han in Tsinghua University.
 
 # Datasets
-http://www.ibookman.net
-http://ciia.cs.tsinghua.edu.cn
+-	http://www.ibookman.net
+-	http://ciia.cs.tsinghua.edu.cn
 
 ## Supported Papers
 -	ManifoldE (IJCAI.2016): https://arxiv.org/pdf/1512.04792.pdf
