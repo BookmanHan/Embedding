@@ -26,7 +26,7 @@ This Project is contributed by Xiao Han in Tsinghua University.
 	-	**Not Necessary**, but I strongly suggest you could take advantage of your devices.
 
 
-## Basic Config
+## Basic Configuration
 -	Windows
 	-	This project is naturally built on Visual Studio 2013 with Intel C++ Compiler 2016. If we share the same development perference, I guess you could start your work, right now.
 	-	When you decide to compile it with MSC, there is a little trouble, because you shoud adjust your configuration.
