@@ -6,11 +6,11 @@ http://www.ibookman.net
 http://ciia.cs.tsinghua.edu.cn
 
 ## Supported Papers
-ManifoldE (IJCAI.2016): https://arxiv.org/pdf/1512.04792.pdf
-TransG (ACL.2016): https://arxiv.org/pdf/1509.05488.pdf
-TransA (submitting to AAAI.2017): https://arxiv.org/pdf/1509.05490.pdf
-SSP (submitting to AAAI.2017): https://arxiv.org/pdf/1604.04835.pdf
-KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
+-	ManifoldE (IJCAI.2016): https://arxiv.org/pdf/1512.04792.pdf
+-	TransG (ACL.2016): https://arxiv.org/pdf/1509.05488.pdf
+-	TransA (submitting to AAAI.2017): https://arxiv.org/pdf/1509.05490.pdf
+-	SSP (submitting to AAAI.2017): https://arxiv.org/pdf/1604.04835.pdf
+-	KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
 
 ## Dependency
 -	Armadillo
@@ -39,13 +39,10 @@ KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
 -	To justify you data source, please modify the `MultiChannelEmbedding\DetailedConfig.hpp`.
 -	To explore the correspondding method, just fill the template in `MultiChannelEmbedding\Embedding.cpp` with hyper-parameters.
 	
-`	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 10, 0.01, 0.1, 0.01, 10);`
-
-`	model->run(500);`
-
-`	model->test();`
-
-`	delete model;`
+	-	`	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 10, 0.01, 0.1, 0.01, 10);`
+	-	`	model->run(500);`
+	-	`	model->test();`
+	-	`	delete model;`
 
 
 ## Alias
