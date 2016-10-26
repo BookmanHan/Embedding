@@ -13,23 +13,9 @@ This Project is contributed by Xiao Han in Tsinghua University.
 -	KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
 
 ## Citation
-Conventionally, if this project helps you, please cite our paper.
-`@inproceedings{ManifoldE,
-	title={From One Point To A Manifold: Knowledge Graph Embedding For Precise Link Prediction},
-	author={Han Xiao and Minlie Huang and Xiaoyan Zhu},
-	booktitle={Proceedings of the 25th International Joint Conference on Artificial Intelligence},
-	year={2016}
-}
-`
-`
-@inproceedings{TransG,
-	title={TransG : A Generative Model for Knowledge Graph Embedding},
-	author={Han Xiao and Minlie Huang and Xiaoyan Zhu},
-	booktitle={Proceedings of the 29th international conference on computational linguistics},
-	year={2016},
-	organization={Association for Computational Linguistics}
-}
-`
+Conventionally, if this project helps you, please cite our paper, corresponddingly.
+-	Han Xiao, Minlie Huang, Xiaoyan Zhu. From One Point to A Manifold: Orbit Models for Knowledge Graph Embedding. The 25th International Joint Conference on Artificial Intelligence (IJCAI'16).
+-	Han Xiao, Minlie Huang, Xiaoyan Zhu. TransG: A Generative Mixture Model for Knowledge Graph Embedding. The 54th Annual Meeting of the Association for Computational Linguistics (ACL'2016).
 
 ## Dependency
 -	Armadillo
