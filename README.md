@@ -12,6 +12,25 @@ This Project is contributed by Xiao Han in Tsinghua University.
 -	SSP (submitting to AAAI.2017): https://arxiv.org/pdf/1604.04835.pdf
 -	KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
 
+## Citation
+Conventionally, if this project helps you, please cite our paper.
+`@inproceedings{ManifoldE,
+	title={From One Point To A Manifold: Knowledge Graph Embedding For Precise Link Prediction},
+	author={Han Xiao and Minlie Huang and Xiaoyan Zhu},
+	booktitle={Proceedings of the 25th International Joint Conference on Artificial Intelligence},
+	year={2016}
+}
+`
+`
+@inproceedings{TransG,
+	title={TransG : A Generative Model for Knowledge Graph Embedding},
+	author={Han Xiao and Minlie Huang and Xiaoyan Zhu},
+	booktitle={Proceedings of the 29th international conference on computational linguistics},
+	year={2016},
+	organization={Association for Computational Linguistics}
+}
+`
+
 ## Dependency
 -	Armadillo
 	-	Armadillo is a high quality linear algebra library (matrix maths) for the C++ language, aiming towards a good balance between speed and ease of use 
