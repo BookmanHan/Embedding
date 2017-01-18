@@ -17,6 +17,7 @@ Conventionally, if this project helps you, please cite our paper, correspondding
 -	Han Xiao, Minlie Huang, Xiaoyan Zhu. From One Point to A Manifold: Orbit Models for Knowledge Graph Embedding. The 25th International Joint Conference on Artificial Intelligence (IJCAI'16).
 -	Han Xiao, Minlie Huang, Xiaoyan Zhu. TransG: A Generative Mixture Model for Knowledge Graph Embedding. The 54th Annual Meeting of the Association for Computational Linguistics (ACL'2016).
 -	Han Xiao, Minlie Huang, Lian Meng, Xiaoyan Zhu. SSP: Semantic Space Projection for Knowledge Graph Embedding with Text Descriptions. The Thirty-First AAAI Conference on Artificial Intelligence (AAAI'17).
+
 ## Dependency
 -	Armadillo
 	-	Armadillo is a high quality linear algebra library (matrix maths) for the C++ language, aiming towards a good balance between speed and ease of use 
