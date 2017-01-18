@@ -6,17 +6,17 @@ This Project is contributed by Xiao Han in Tsinghua University.
 -	http://ciia.cs.tsinghua.edu.cn
 
 ## Supported Papers
--	ManifoldE (IJCAI.2016): https://arxiv.org/pdf/1512.04792.pdf
--	TransG (ACL.2016): https://arxiv.org/pdf/1509.05488.pdf
--	TransA (submitting to AAAI.2017): https://arxiv.org/pdf/1509.05490.pdf
--	SSP (submitting to AAAI.2017): https://arxiv.org/pdf/1604.04835.pdf
--	KSR (submitting to AAAI.2017): https://arxiv.org/pdf/1608.07685.pdf
+-	ManifoldE (IJCAI.2016): http://www.ibookman.net/IJCAI.2016.ManifoldE.pdf
+-	TransG (ACL.2016): http://www.ibookman.net/ACL.2016.TransG.pdf
+-	SSP (AAAI.2017): http://www.ibookman.net/AAAI.2017.SSP.pdf
+-	TransA (Arxiv): http://www.ibookman.net/Arxiv.TransA.pdf
+-	KSR (submitting to ACL.2017): http://www.ibookman.net/Arixv.KSR.pdf
 
 ## Citation
 Conventionally, if this project helps you, please cite our paper, corresponddingly.
 -	Han Xiao, Minlie Huang, Xiaoyan Zhu. From One Point to A Manifold: Orbit Models for Knowledge Graph Embedding. The 25th International Joint Conference on Artificial Intelligence (IJCAI'16).
 -	Han Xiao, Minlie Huang, Xiaoyan Zhu. TransG: A Generative Mixture Model for Knowledge Graph Embedding. The 54th Annual Meeting of the Association for Computational Linguistics (ACL'2016).
-
+-	Han Xiao, Minlie Huang, Lian Meng, Xiaoyan Zhu. SSP: Semantic Space Projection for Knowledge Graph Embedding with Text Descriptions. The Thirty-First AAAI Conference on Artificial Intelligence (AAAI'17).
 ## Dependency
 -	Armadillo
 	-	Armadillo is a high quality linear algebra library (matrix maths) for the C++ language, aiming towards a good balance between speed and ease of use 
