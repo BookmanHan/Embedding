@@ -42,7 +42,7 @@ Conventionally, if this project helps you, please cite our paper, correspondding
 	-	`icc -std=c++11 -O3 -xHost -qopenmp -m32 Embedding.cpp`
 
 ## Start
--	To justify you data source, please modify the `MultiChannelEmbedding\DetailedConfig.hpp`.
+-	To justify your data source, please modify the `MultiChannelEmbedding\DetailedConfig.hpp`.
 -	To explore the correspondding method, just fill the template in `MultiChannelEmbedding\Embedding.cpp` with hyper-parameters.
 	
 	-	`	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 10, 0.01, 0.1, 0.01, 10);`
