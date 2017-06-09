@@ -49,7 +49,7 @@ Conventionally, if this project helps you, please cite our paper, correspondding
 	-	`	model->run(10000);`
 	-	`	model->test();`
 	-	`	delete model;`
--	Notably, our code needs a little more turns to converge, we suggest 10,000 rounds for each experiment.
+-	**Notably, our code needs a little more turns to converge, we suggest 10,000 rounds for each experiment.** This is a critical trick for repeating our experiments.
 
 ## Alias
 -	OrbitE = ManifoldE
