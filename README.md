@@ -46,10 +46,10 @@ Conventionally, if this project helps you, please cite our paper, correspondding
 -	To explore the correspondding method, just fill the template in `MultiChannelEmbedding\Embedding.cpp` with hyper-parameters.
 	
 	-	`	model = new MFactorE(FB15K, LinkPredictionTail, report_path, 10, 0.01, 0.1, 0.01, 10);`
-	-	`	model->run(500);`
+	-	`	model->run(10000);`
 	-	`	model->test();`
 	-	`	delete model;`
-
+-	Notably, our code needs a little more turns to converge, we suggest 10,000 rounds for each experiment.
 
 ## Alias
 -	OrbitE = ManifoldE
