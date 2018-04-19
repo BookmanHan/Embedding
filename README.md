@@ -2,8 +2,7 @@
 This Project is contributed by Xiao Han in Tsinghua University.
 
 ## Datasets
--	http://www.ibookman.net
--	http://ciia.cs.tsinghua.edu.cn
+-	KGE.zip
 
 ## Supported Papers
 -	ManifoldE (IJCAI.2016): http://www.ibookman.net/IJCAI.2016.ManifoldE.pdf
@@ -17,6 +16,29 @@ Conventionally, if this project helps you, please cite our paper, correspondding
 -	Han Xiao, Minlie Huang, Xiaoyan Zhu. From One Point to A Manifold: Orbit Models for Knowledge Graph Embedding. The 25th International Joint Conference on Artificial Intelligence (IJCAI'16).
 -	Han Xiao, Minlie Huang, Xiaoyan Zhu. TransG: A Generative Mixture Model for Knowledge Graph Embedding. The 54th Annual Meeting of the Association for Computational Linguistics (ACL'2016).
 -	Han Xiao, Minlie Huang, Lian Meng, Xiaoyan Zhu. SSP: Semantic Space Projection for Knowledge Graph Embedding with Text Descriptions. The Thirty-First AAAI Conference on Artificial Intelligence (AAAI'17).
+
+## BibTex
+```
+@article{Xiao2015From,
+  title={From One Point to A Manifold: Orbit Models for Knowledge Graph Embedding},
+  author={Xiao, Han and Huang, Minlie and Hao, Yu and Zhu, Xiaoyan},
+  journal={Computer Science},
+  year={2015},
+}
+
+@article{Xiao2016TransG,
+  title={TransG : A Generative Mixture Model for Knowledge Graph Embedding},
+  author={Xiao, Han and Huang, Minlie and Hao, Yu and Zhu, Xiaoyan},
+  journal={Computer Science},
+  year={2016},
+}
+
+@article{Xiao2016SSP,
+  title={SSP: Semantic Space Projection for Knowledge Graph Embedding with Text Descriptions},
+  author={Xiao, Han and Huang, Minlie and Zhu, Xiaoyan},
+  year={2016},
+}
+```
 
 ## Dependency
 -	Armadillo
@@ -54,3 +76,14 @@ Conventionally, if this project helps you, please cite our paper, correspondding
 ## Alias
 -	OrbitE = ManifoldE
 -	MFactorE = KSR
+
+## Code Structures
+-	Import.hpp imports the headers of project.
+-	DataModel.hpp specifies the data structure of knowledge graph.
+-	Model.hpp specifies the training and testing process of knowledge embedding model.
+-	DetailedConfig.hpp specifies the detailed configuration of project, such as file path.
+-	Embedding.cpp is the main source file.
+-	GeometricModel.hpp implements TransE, TransH and TransR.
+-	OrbitModel.hpp implements ManifoldE.
+-	SemanticModel.hpp implements SSP.
+-	LatentModel.hpp implements KSR. 
